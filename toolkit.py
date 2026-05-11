@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Allen-Bradley PLC Toolkit - Main Hub
+PLC Toolkit - Main Hub
 Handles PLC connection, initial tag discovery, database storage, and the main tool menu.
 """
 

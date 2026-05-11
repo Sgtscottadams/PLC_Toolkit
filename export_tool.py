@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Allen-Bradley PLC Export Tool - Module
+PLC Toolkit - Export Tool - Module
 This script reads tag data from the local database and generates reports.
 """
 

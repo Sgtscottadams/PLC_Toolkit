@@ -5,7 +5,7 @@ REM ========================================
 
 echo.
 echo ============================================
-echo  Allen-Bradley PLC Toolkit
+echo  PLC Toolkit
 echo  Windows Executable Builder
 echo ============================================
 echo.
@@ -51,11 +51,11 @@ echo [4/4] Creating launcher and documentation...
 REM Create launcher batch file
 (
 echo @echo off
-echo title Allen-Bradley PLC Toolkit
+echo title PLC Toolkit
 echo color 0A
 echo.
 echo echo ============================================
-echo echo  Allen-Bradley PLC Toolkit
+echo echo  PLC Toolkit
 echo echo  Tag Discovery - Export - Live Monitoring
 echo echo ============================================
 echo echo.
@@ -71,7 +71,7 @@ echo if %%ERRORLEVEL%% NEQ 0 pause
 
 REM Create quick instructions
 (
-echo ALLEN-BRADLEY PLC TOOLKIT - QUICK START
+echo PLC TOOLKIT - QUICK START
 echo ========================================
 echo.
 echo TO RUN:

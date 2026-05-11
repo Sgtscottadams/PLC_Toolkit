@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Allen-Bradley PLC Toolkit - Consolidated Version
-A unified tool for PLC tag discovery, export, and monitoring.
+PLC Toolkit - Consolidated Version
+A unified tool for Allen-Bradley PLC tag discovery, export, and monitoring.
 Combines all functionality into a single, well-organized class structure.
 """
 
@@ -561,7 +561,7 @@ class PLCToolkit:
         print(r"""
     ╔═══════════════════════════════════════════════════════════════╗
     ║                                                               ║
-    ║      Allen-Bradley PLC Toolkit - Consolidated Edition        ║
+    ║      PLC Toolkit - Consolidated Edition                   ║
     ║                                                               ║
     ║           Tag Discovery • Export • Live Monitoring           ║
     ║                                                               ║
