@@ -136,10 +136,10 @@ def create_distribution():
     
     # Create batch file launcher
     batch_content = '''@echo off
-title Allen-Bradley PLC Toolkit
+title PLC Toolkit
 echo.
 echo ============================================
-echo  Allen-Bradley PLC Toolkit
+echo  PLC Toolkit
 echo  Starting...
 echo ============================================
 echo.
@@ -173,7 +173,7 @@ if %ERRORLEVEL% NEQ 0 (
         f.write(batch_content)
     
     # Create README
-    readme_content = '''# Allen-Bradley PLC Toolkit - Windows Edition
+    readme_content = '''# PLC Toolkit - Windows Edition
 
 ## Quick Start
 

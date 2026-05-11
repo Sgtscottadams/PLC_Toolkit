@@ -66,7 +66,7 @@ cls
 color 0A
 echo.
 echo  ╔══════════════════════════════════════════╗
-echo  ║   Allen-Bradley PLC Toolkit              ║
+echo  ║   PLC Toolkit                            ║
 echo  ║   Tag Discovery and Monitoring           ║
 echo  ╚══════════════════════════════════════════╝
 echo.

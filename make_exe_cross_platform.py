@@ -123,7 +123,7 @@ cls
 color 0A
 echo.
 echo  ╔══════════════════════════════════════════╗
-echo  ║   Allen-Bradley PLC Toolkit              ║
+echo  ║   PLC Toolkit                            ║
 echo  ╚══════════════════════════════════════════╝
 echo.
 if not exist plc_scans mkdir plc_scans

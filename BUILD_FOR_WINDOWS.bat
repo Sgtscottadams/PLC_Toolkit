@@ -8,7 +8,7 @@ cls
 color 0A
 echo.
 echo =============================================
-echo  Allen-Bradley PLC Toolkit
+echo  PLC Toolkit
 echo  Windows Executable Builder
 echo =============================================
 echo.
@@ -56,7 +56,7 @@ if exist dist\PLC_Toolkit.exe (
     echo cls
     echo echo.
     echo echo ============================================
-    echo echo   Allen-Bradley PLC Toolkit
+    echo echo   PLC Toolkit
     echo echo   Tag Discovery and Monitoring
     echo echo ============================================
     echo echo.

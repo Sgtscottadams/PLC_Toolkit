@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Allen-Bradley PLC Tag Checker Tool - Module
+PLC Toolkit - Tag Checker Tool - Module
 This script reads a single tag's value and is called by the main toolkit.
 It includes a continuous monitoring mode with a reading history.
 """

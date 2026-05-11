@@ -1,4 +1,4 @@
-name: Build Windows Executable
+name: Build PLC Toolkit (Windows)
 
 on:
   push:
@@ -34,7 +34,7 @@ jobs:
         echo cls >> Run_Toolkit.bat
         echo echo. >> Run_Toolkit.bat
         echo echo ============================================ >> Run_Toolkit.bat
-        echo echo   Allen-Bradley PLC Toolkit >> Run_Toolkit.bat
+        echo echo   PLC Toolkit >> Run_Toolkit.bat
         echo echo   Tag Discovery and Monitoring >> Run_Toolkit.bat
         echo echo ============================================ >> Run_Toolkit.bat
         echo echo. >> Run_Toolkit.bat
