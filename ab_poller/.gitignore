@@ -51,5 +51,7 @@ Thumbs.db
 *.log
 *.tmp
 /test_*
-!/tests/
-!/tests/**
+
+# Never track compiled caches (the patterns above must not re-include them)
+__pycache__/
+*.py[cod]

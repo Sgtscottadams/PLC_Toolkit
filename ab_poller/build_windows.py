@@ -59,7 +59,10 @@ def _generate_splash_png(root: Path) -> Path:
     import os
 
     splash_dst = root / "plc_toolkit" / "assets" / "splash.png"
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    # Render under the real Windows platform so system fonts are available
+    # and the baked-in title/subtitle render as text (not tofu boxes). The
+    # headless 'offscreen' platform has no fonts.
+    os.environ["QT_QPA_PLATFORM"] = "windows"
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
     from PySide6.QtWidgets import QApplication
@@ -67,7 +70,7 @@ def _generate_splash_png(root: Path) -> Path:
     from plc_toolkit.splash import splash_pixmap
 
     app = QApplication([])
-    if not splash_pixmap().save(str(splash_dst), "PNG"):
+    if not splash_pixmap(with_text=True).save(str(splash_dst), "PNG"):
         raise RuntimeError(f"Could not write {splash_dst}")
     app.quit()
     return splash_dst
@@ -136,10 +139,10 @@ splash = Splash(
     '{rel_splash}',
     binaries=a.binaries,
     datas=a.datas,
-    text_pos=(10, 255),
-    text_size=10,
-    text_color='white',
-    text_default='Starting PLC Toolkit…',
+    text_pos=(12, 262),
+    text_size=8,
+    text_color='#8FA4B8',
+    text_default='Loading PLC Toolkit',
     minify_script=True,
     always_on_top=True,
 )

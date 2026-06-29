@@ -163,6 +163,20 @@ class MainWindow(QMainWindow):
         super().closeEvent(event)
 
 
+def _close_pyi_splash() -> None:
+    """Dismiss the PyInstaller bootloader splash, if present.
+
+    In a onefile build the bootloader shows a splash during unpack. It
+    stays on top for the whole session unless the app closes it — which is
+    why it appeared 'stuck'. Only exists in the frozen build.
+    """
+    try:
+        import pyi_splash  # type: ignore
+        pyi_splash.close()
+    except Exception:
+        pass
+
+
 def main() -> int:
     ensure_portable_layout()
     app = QApplication.instance() or QApplication(sys.argv)
@@ -170,6 +184,8 @@ def main() -> int:
     app.setOrganizationName("Continental Resources")
     app.setStyleSheet(_style.STYLESHEET)
     splash = show_startup_splash(app)
+    # Hand off from the bootloader splash to our own Qt splash.
+    _close_pyi_splash()
     w = MainWindow()
     w.show()
     splash.finish(w)
