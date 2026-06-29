@@ -24,6 +24,7 @@ from PySide6.QtCore import QObject, QThread, Signal
 
 import plck
 from plck.comms import PLCClient
+from plck.device_filter import is_tag_readable_controller
 from plck.errors import PlcError
 from plck.models import PlcConnection, ReadResult, TagTree
 
@@ -36,6 +37,7 @@ class _DiscoverySignals(QObject):
     progress = Signal(str)  # human-readable status line
     finished = Signal(object)  # TagTree
     failed = Signal(str)  # error message
+    unsupported = Signal(object)  # PlcConnection — device type not tag-readable
 
 
 class DiscoveryWorker(QThread):
@@ -60,6 +62,16 @@ class DiscoveryWorker(QThread):
             self.signals.progress.emit(f"Connecting to {client.plc.ip}…")
             client.get_device_info()
             if self._cancelled:
+                return
+            # Block non-Logix devices (MicroLogix, SLC, PanelView, etc.)
+            # here — once device info is known — so a manually-added or
+            # direct connection gets a clear "not supported" message
+            # instead of a confusing tag-discovery timeout.
+            if not is_tag_readable_controller(
+                self.plc.product_name, self.plc.vendor
+            ):
+                if not self._cancelled:
+                    self.signals.unsupported.emit(self.plc)
                 return
             self.signals.progress.emit(
                 "Querying tag list (this can take a while on large programs)…"

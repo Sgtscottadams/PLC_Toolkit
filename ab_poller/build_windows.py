@@ -120,7 +120,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={{}},
     runtime_hooks=[],
-    excludes=['matplotlib', 'numpy', 'pandas', 'tkinter', 'pycomm3', 'tkinter'],
+    excludes=['matplotlib', 'numpy', 'pandas', 'pycomm3'],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
@@ -129,6 +129,9 @@ a = Analysis(
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
+# Bootloader splash — shows instantly while the onefile exe unpacks,
+# before Python/Qt start. Requires Tcl/Tk, so 'tkinter' must NOT be in
+# excludes, and EXE must include both `splash` and `splash.binaries`.
 splash = Splash(
     '{rel_splash}',
     binaries=a.binaries,
@@ -144,10 +147,11 @@ splash = Splash(
 exe = EXE(
     pyz,
     a.scripts,
+    splash,
+    splash.binaries,
     a.binaries,
     a.zipfiles,
     a.datas,
-    splash,
     name='PLC_Toolkit',
     debug=False,
     bootloader_ignore_signals=False,
@@ -196,9 +200,9 @@ def _write_quick_start(path: Path) -> None:
         "PLC TOOLKIT — PORTABLE PACKAGE\n"
         "==============================\n\n"
         "DEPLOY:\n"
-        "  1. Copy PLC_Toolkit_Windows.zip to the target PC or server.\n"
-        "  2. Extract the entire zip to a folder (e.g. L:\\SCADA\\Apps\\PLC Toolkit).\n"
-        "  3. Double-click PLC_Toolkit.exe inside the extracted folder.\n\n"
+        "  1. Copy PLC_Toolkit.zip to the target PC or server.\n"
+        "  2. Right-click the zip -> Extract All. You get one PLC_Toolkit\\ folder.\n"
+        "  3. Double-click PLC_Toolkit.exe inside that folder.\n\n"
         "DO NOT copy only the .exe — use the full extracted folder.\n"
         "Optional shortcuts live in the extras\\ folder.\n\n"
         "FOLDER CONTENTS:\n"
@@ -265,10 +269,13 @@ def assemble_package(dist_exe: Path, root: Path, repo_root: Path) -> tuple[Path,
         encoding="utf-8",
     )
 
-    zip_base = package_root / "PLC_Toolkit_Windows"
+    # Archive the *contents* of package_dir at the zip root (base_dir=".")
+    # so extracting PLC_Toolkit.zip yields a single PLC_Toolkit\ folder
+    # (named from the zip) with the exe directly inside — no nested folder.
+    zip_base = package_root / "PLC_Toolkit"
     if zip_base.with_suffix(".zip").is_file():
         zip_base.with_suffix(".zip").unlink()
-    archive = shutil.make_archive(str(zip_base), "zip", package_root, "PLC_Toolkit")
+    archive = shutil.make_archive(str(zip_base), "zip", root_dir=str(package_dir))
     return package_dir, Path(archive)
 
 

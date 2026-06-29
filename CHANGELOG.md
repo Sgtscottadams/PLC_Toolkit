@@ -18,6 +18,85 @@ The project has two parallel surfaces:
 
 ---
 
+## 2026-06-29 — Close the unsupported-device loophole on direct connect
+
+### Changed (`workers`, `workspace_view.py`, `device_filter.py`)
+- A direct/manual connection to a non-Logix Allen-Bradley device (e.g. a
+  **MicroLogix**) previously fell through to tag discovery and surfaced a
+  confusing `Unknown error ... timed out`. Now `DiscoveryWorker` checks
+  the device identity right after `get_device_info()` and, if it is not a
+  tag-readable Logix controller, emits a new `unsupported` signal instead
+  of attempting discovery.
+- `WorkspaceView` handles `unsupported` by showing a clear, **device-typed**
+  dialog (e.g. "MicroLogix 1400 (1766-L32BWAA) is not supported by PLC
+  Toolkit"), logging it to Diagnostics, persisting the discovered identity
+  so the Connection Manager blocks it up-front next time, and returning to
+  the Connection Manager.
+- `device_filter.py`: added `describe_device_type()` (maps common non-Logix
+  AB families — MicroLogix, SLC 500, PLC-5, PanelView, Stratix, PowerFlex,
+  POINT/FLEX I/O — to friendly labels) and reworded
+  `unsupported_device_message()` to lead with the specific device type.
+- `ab_poller/tests/test_unsupported_device.py` — 6 tests covering the
+  device-type description, the message wording, and the worker emitting
+  `unsupported` (vs proceeding) for MicroLogix vs CompactLogix.
+- Rebuilt `PLC_Toolkit.exe` and `dist_package/PLC_Toolkit.zip`.
+
+---
+
+## 2026-06-29 — Fix discovery crash: `'NoneType' object is not subscriptable`
+
+### Fixed (`ab_poller/plck/pylogix_patches.py`, `ab_poller/plck/comms.py`)
+- **Tag discovery crashed on field CompactLogix/ControlLogix** (seen on
+  10.254.120.102 / .103) with `Could not discover tags: 'NoneType' object
+  is not subscriptable`. Root cause is in pylogix 1.1.5: `GetTagList`
+  always calls `_get_udt()`, which does `temp[46:]` on the UDT *template*
+  service response. On controllers that reject/time out the template
+  service, `_get_template_attribute()`/`_get_template()` return `None`
+  and pylogix crashes the entire discovery.
+- Added `plck/pylogix_patches.py`, a runtime resilience shim (installed
+  once from `plck/comms.py`) that (1) coerces a `None` template payload to
+  empty bytes so pylogix's existing "invalid template" branch skips just
+  that UDT, and (2) wraps `_get_udt` so any residual failure degrades to
+  the flat tag list — discovery now succeeds with atomic/top-level tags
+  even when UDT member expansion is refused by the controller. Chose a
+  local shim over a second comms library per AGENTS.md.
+- `ab_poller/tests/test_pylogix_patches.py` — 5 tests pinning the None
+  coercion, the `_get_udt` degrade-on-error backstop, pass-through on
+  success, and idempotent install.
+- Rebuilt `PLC_Toolkit.exe` and `dist_package/PLC_Toolkit.zip`.
+
+### Note — MicroLogix / SLC are out of scope
+- MicroLogix (and SLC) use PCCC, not the Logix symbolic tag database, so
+  pylogix tag discovery cannot read them. This is expected: v2 targets the
+  Logix family (ControlLogix / CompactLogix / Micro800), per AGENTS.md.
+  Subnet discovery filters these out, and a direct connection is now
+  blocked with a clear device-typed message (see the unsupported-device
+  loophole entry above) instead of a discovery timeout.
+
+---
+
+## 2026-06-29 — Fix launch crash (Tcl splash) and double-folder extraction
+
+### Fixed (`ab_poller/build_windows.py`)
+- **Launch crash `SPLASH: could not find requirement tcl86t.dll in
+  archive`.** Two bugs in the spec: `tkinter` was in `excludes` (which
+  strips the Tcl/Tk the bootloader splash needs) and the onefile `EXE`
+  was missing `splash.binaries`. Fixed by removing `tkinter` from
+  `excludes` and adding both `splash` and `splash.binaries` to `EXE`, so
+  Tcl/Tk is now bundled and the bootloader splash shows during the
+  onefile unpack (immediate feedback before Python/Qt start). The app's
+  own Qt splash still follows while the main window loads.
+- **Double nested folder on extract.** The zip is now named
+  `PLC_Toolkit.zip` and archives the package *contents* at the zip root
+  (`base_dir="."`), so Windows "Extract All" yields a single
+  `PLC_Toolkit\` folder with `PLC_Toolkit.exe` directly inside (was
+  `PLC_Toolkit_Windows\PLC_Toolkit\PLC_Toolkit.exe`).
+- Updated `BUILD_PORTABLE.bat`, `Quick_Start.txt`, and `README.md` for
+  the new `dist_package/PLC_Toolkit.zip` name and single-folder extract.
+- Rebuilt `PLC_Toolkit.exe` and `dist_package/PLC_Toolkit.zip`.
+
+---
+
 ## 2026-06-29 — Portable package: clean extracted root (exe + folders only)
 
 ### Changed (`ab_poller/build_windows.py`, `ab_poller/plc_toolkit/settings_store.py`)

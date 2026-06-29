@@ -35,10 +35,11 @@ cd ab_poller
 
 Or: `.\.venv\Scripts\python.exe build_windows.py`
 
-**Send users:** `dist_package/PLC_Toolkit_Windows.zip`
+**Send users:** `dist_package/PLC_Toolkit.zip`
 
-Extract the entire zip on the target PC or server share. **Double-click
-`PLC_Toolkit.exe`** inside the extracted folder. No Python install required.
+Extract the zip on the target PC or server share — it yields a single
+`PLC_Toolkit\` folder. **Double-click `PLC_Toolkit.exe`** inside it. No
+Python install required.
 
 Optional shortcuts (same program) live in `extras/`: `Launch PLC Toolkit.vbs`
 (no command window) and `Run_Toolkit.bat`.
