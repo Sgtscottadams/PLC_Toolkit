@@ -1,0 +1,99 @@
+name: Build PLC Toolkit (Windows)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller pycomm3 openpyxl
+    
+    - name: Build executable with PyInstaller
+      run: |
+        pyinstaller --onefile --console --clean --name PLC_Toolkit --distpath . plc_toolkit_consolidated.py
+    
+    - name: Create launcher batch file
+      shell: cmd
+      run: |
+        echo @echo off > Run_Toolkit.bat
+        echo cls >> Run_Toolkit.bat
+        echo echo. >> Run_Toolkit.bat
+        echo echo ============================================ >> Run_Toolkit.bat
+        echo echo   PLC Toolkit >> Run_Toolkit.bat
+        echo echo   Tag Discovery and Monitoring >> Run_Toolkit.bat
+        echo echo ============================================ >> Run_Toolkit.bat
+        echo echo. >> Run_Toolkit.bat
+        echo if not exist plc_scans mkdir plc_scans >> Run_Toolkit.bat
+        echo PLC_Toolkit.exe >> Run_Toolkit.bat
+        echo if %%ERRORLEVEL%% NEQ 0 pause >> Run_Toolkit.bat
+    
+    - name: Create README
+      run: |
+        echo "PLC TOOLKIT - WINDOWS EXECUTABLE" > README.txt
+        echo "================================" >> README.txt
+        echo "" >> README.txt
+        echo "TO RUN:" >> README.txt
+        echo "  1. Extract all files" >> README.txt
+        echo "  2. Double-click Run_Toolkit.bat" >> README.txt
+        echo "" >> README.txt
+        echo "REQUIREMENTS:" >> README.txt
+        echo "  - Windows 10/11 or Server" >> README.txt
+        echo "  - Network access to PLC" >> README.txt
+        echo "" >> README.txt
+        echo "Created by GitHub Actions" >> README.txt
+        echo "Build date: $(Get-Date)" >> README.txt
+    
+    - name: Upload Windows executable
+      uses: actions/upload-artifact@v4
+      with:
+        name: PLC-Toolkit-Windows-Build-${{ github.run_number }}
+        path: |
+          PLC_Toolkit.exe
+          Run_Toolkit.bat
+          README.txt
+        retention-days: 90
+    
+    - name: Create Release (if tagged)
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          PLC_Toolkit.exe
+          Run_Toolkit.bat
+          README.txt
+        name: PLC Toolkit ${{ github.ref_name }}
+        body: |
+          # Windows Executable Release
+          
+          ## 📦 Installation
+          1. Download all files
+          2. Extract to a folder
+          3. Run `Run_Toolkit.bat`
+          
+          ## 💻 Requirements
+          - Windows 10/11 or Windows Server
+          - Network access to Allen-Bradley PLC
+          
+          ## 🚀 Features
+          - Tag discovery and database storage
+          - Export to Excel, JSON, XML
+          - Live tag reading and monitoring
+          - Case-insensitive tag matching
+          
+          ---
+          *No Python installation required!*

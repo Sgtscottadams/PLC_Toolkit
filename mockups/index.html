@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PLC Toolkit — Wireframe Index</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="theme-dark">
+<div class="index-wrap">
+
+  <h1>PLC Toolkit — Wireframe Set</h1>
+  <p>Honest wireframes (boxes &amp; labels, no real styling). These are intended to verify
+  navigation and layout only, not visual polish. Click any screen below to view it.</p>
+
+  <p class="hint">All wireframes are static HTML; no JavaScript is executed. Anchor width: 1280px.</p>
+
+  <h2>Screens</h2>
+  <ul class="flat">
+    <li>
+      <a href="01-connection-manager.html">01 — Connection Manager</a>
+      <span class="hint">| Root screen, always shown on launch. Lists saved PLCs.</span>
+    </li>
+    <li>
+      <a href="02-new-connection.html">02 — New Connection (modal)</a>
+      <span class="hint">| Modal dialog: nickname, IP, slot, CIP path.</span>
+    </li>
+    <li>
+      <a href="03-discover-plcs.html">03 — Discover PLCs (modal)</a>
+      <span class="hint">| Subnet discovery with probe list and results table.</span>
+    </li>
+    <li>
+      <a href="04-workspace-browse.html">04 — Workspace: Browse</a>
+      <span class="hint">| Connected state. Tag tree on the left, detail pane on the right.</span>
+    </li>
+    <li>
+      <a href="05-workspace-monitor.html">05 — Workspace: Monitor</a>
+      <span class="hint">| Watch list with current values and sparkline placeholders.</span>
+    </li>
+    <li>
+      <a href="06-workspace-export.html">06 — Workspace: Export</a>
+      <span class="hint">| Source selection, format checkboxes, output folder, filename.</span>
+    </li>
+    <li>
+      <a href="07-workspace-history.html">07 — Workspace: History</a>
+      <span class="hint">| Past scans for the connected PLC, with per-row actions.</span>
+    </li>
+    <li>
+      <a href="08-workspace-diagnostics.html">08 — Workspace: Diagnostics</a>
+      <span class="hint">| Connection summary, bandwidth, recent activity log.</span>
+    </li>
+    <li>
+      <a href="09-settings.html">09 — Settings (modal)</a>
+      <span class="hint">| All app-level preferences grouped by section.</span>
+    </li>
+    <li>
+      <a href="10-help.html">10 — Help (placeholder)</a>
+      <span class="hint">| Intentionally not implemented. Flagged for v2.1.</span>
+    </li>
+  </ul>
+
+  <h2>Navigation Tree</h2>
+  <p class="hint">Click-flow from launch. Asterisk marks the screen you reach; number is "clicks from launch".</p>
+  <div class="navtree">
+    <ul>
+      <li>
+        Launch <span class="step">→ app opens to</span>
+        <ul>
+          <li>
+            <a href="01-connection-manager.html">01 Connection Manager</a> <span class="step">[0 clicks from launch]</span>
+          </li>
+          <li>
+            From Connection Manager, the user can go to:
+            <ul>
+              <li>
+                <a href="02-new-connection.html">02 New Connection (modal)</a>
+                <span class="step">[+1 click: "+ Connect to a new PLC" → 1 click from launch]</span>
+              </li>
+              <li>
+                <a href="03-discover-plcs.html">03 Discover PLCs (modal)</a>
+                <span class="step">[+1 click: "Discover" link/button → 1 click from launch]</span>
+              </li>
+              <li>
+                <a href="09-settings.html">09 Settings (modal)</a>
+                <span class="step">[+1 click: gear icon → 1 click from launch]</span>
+              </li>
+              <li>
+                <a href="10-help.html">10 Help</a>
+                <span class="step">[+1 click: ? icon → 1 click from launch]</span>
+              </li>
+              <li>
+                <a href="04-workspace-browse.html">04 Workspace: Browse</a>
+                <span class="step">[+1 click: "Connect" on a row → 1 click from launch]</span>
+                <ul>
+                  <li>
+                    From inside the workspace, tabs swap without leaving the screen:
+                    <ul>
+                      <li><a href="05-workspace-monitor.html">05 Monitor</a> <span class="step">[2 clicks from launch]</span></li>
+                      <li><a href="06-workspace-export.html">06 Export</a> <span class="step">[2 clicks from launch]</span></li>
+                      <li><a href="07-workspace-history.html">07 History</a> <span class="step">[2 clicks from launch]</span></li>
+                      <li><a href="08-workspace-diagnostics.html">08 Diagnostics</a> <span class="step">[2 clicks from launch]</span></li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+
+  <h2>Notes for the reviewer</h2>
+  <ul>
+    <li>All wireframes share <code>wireframe.css</code>. No colors, no shadows, no rounded corners beyond 4px.</li>
+    <li>Each screen has a "X click(s) from launch" badge in the top right of its top bar.</li>
+    <li>Ambiguities in the spec are flagged inline with a dashed grey note that begins <code>[DRAFT:</code>.</li>
+    <li>The "New Connection" and "Discover PLCs" screens are drawn as modal dialogs over a dimmed view of the Connection Manager.</li>
+    <li>The Help screen is intentionally a stub.</li>
+  </ul>
+
+</div>
+<script>
+  // Shared theme controller. Reads localStorage.plc-theme and applies the body class.
+  // Wired to .theme-toggle buttons if present. Defaults to dark.
+  (function () {
+    var b = document.body;
+    function apply(theme) {
+      if (theme === 'dark') b.classList.add('theme-dark');
+      else b.classList.remove('theme-dark');
+      var l = document.getElementById('theme-light');
+      var d = document.getElementById('theme-dark');
+      if (l) l.classList.toggle('is-active', theme === 'light');
+      if (d) d.classList.toggle('is-active', theme === 'dark');
+      try { localStorage.setItem('plc-theme', theme); } catch (e) {}
+    }
+    var saved = null;
+    try { saved = localStorage.getItem('plc-theme'); } catch (e) {}
+    if (saved !== 'light' && saved !== 'dark') saved = 'dark';
+    apply(saved);
+    var l = document.getElementById('theme-light');
+    var d = document.getElementById('theme-dark');
+    if (l) l.addEventListener('click', function () { apply('light'); });
+    if (d) d.addEventListener('click', function () { apply('dark'); });
+  })();
+</script>
+</body>
+</html>

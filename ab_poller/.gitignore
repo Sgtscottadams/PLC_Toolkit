@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# PLC Scan Tool Outputs
+/plc_scans/
+/debug/
+
+# Database files - NEVER sync these
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+plc_data.db
+knowledge.db
+
+# Project Memory - Contains local project data
+project_memory.json
+project_log.md
+
+# Claude AI files
+/.claude/
+
+# Archived redundant code
+/archive_redundant/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Test outputs
+*.log
+*.tmp
+/test_*
+!/tests/
+!/tests/**

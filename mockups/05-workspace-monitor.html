@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>05 — Workspace: Monitor</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="theme-dark">
+<div class="page">
+
+  <div class="crumbs">
+    Connection Manager &rarr; Compressor Skid A &rarr; <b>Monitor</b>
+    <span class="badge">2 clicks from launch</span>
+  </div>
+
+  <div class="topbar">
+        <div class="topbar-left">
+      <a class="back-link" href="01-connection-manager.html" title="Back to Connections (keeps the PLC connection alive)">
+        <span class="arrow" aria-hidden="true">&#8592;</span><span>Connections</span>
+      </a>
+    </div>
+<div class="title">
+      Workspace — Compressor Skid A <span class="hint">(10.20.30.41, slot 0)</span>
+    </div>
+    <div class="actions">
+      <div class="theme-toggle" role="group" aria-label="Theme">
+        <button type="button" id="theme-light">Light</button>
+        <button type="button" id="theme-dark">Dark</button>
+      </div>
+
+      <a class="btn" href="01-connection-manager.html">Disconnect</a>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <a class="tab" href="04-workspace-browse.html">Browse</a>
+    <a class="tab active" href="05-workspace-monitor.html">Monitor*</a>
+    <a class="tab" href="06-workspace-export.html">Export</a>
+    <a class="tab" href="07-workspace-history.html">History</a>
+    <a class="tab" href="08-workspace-diagnostics.html">Diagnostics</a>
+  </div>
+
+  <div class="searchbar">
+    <span>Search:</span>
+    <input type="text" placeholder="filter watch list…">
+    <span class="count">3 tags watched</span>
+  </div>
+
+  <div class="btn-row" style="margin: 8px 12px;">
+    <button class="secondary">+ Add from Browse</button>
+    <span class="hint" style="margin-left:auto;">
+      Open the <a href="04-workspace-browse.html">Browse</a> tab, right-click a tag, "Add to watch list".
+    </span>
+  </div>
+
+  <!--
+    [DRAFT: question for user] Empty-state for the watch list.
+    When 0 rows are in the watch list, the table above is hidden and the
+    following block is shown in its place (currently COMMENTED OUT — the
+    table is populated with 3 sample rows for the wireframe; the real
+    app will toggle between table and empty state at runtime).
+
+    Proposed copy:
+      "Watch list is empty. Right-click any tag in the tag tree to add it,
+       or use [+ Add from Browse]."
+
+    Open question: should the empty state also offer a quick-link to the
+    Browse tab (e.g. "Go to Browse →") in addition to the hint copy?
+  -->
+  <!--
+  <div class="empty" style="margin: 0 12px; padding: 32px; border: 1px dashed var(--color-border);">
+    Watch list is empty. Right-click any tag in the tag tree to add it,
+    or use <b>[+ Add from Browse]</b> to open the tag picker.
+  </div>
+  -->
+
+  <table class="watchlist" style="margin: 0 12px; width: calc(100% - 24px);">
+    <thead>
+      <tr>
+        <th style="width: 24px;"><input type="checkbox" disabled></th>
+        <th>Tag</th>
+        <th>Type</th>
+        <th>Current value</th>
+        <th>Quality</th>
+        <th>Trend (last 60 samples)</th>
+        <th>Last update</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><input type="checkbox"></td>
+        <td>Pump_01.Speed</td>
+        <td>REAL</td>
+        <td class="value">1742.5</td>
+        <td>Good</td>
+        <td class="spark">
+          <!-- placeholder sparkline (boxes, not real data) -->
+          <svg width="110" height="20" viewBox="0 0 110 20" aria-label="trend placeholder">
+            <rect x="0"   y="9" width="6" height="2" fill="#888"></rect>
+            <rect x="8"   y="7" width="6" height="6" fill="#888"></rect>
+            <rect x="16"  y="5" width="6" height="10" fill="#888"></rect>
+            <rect x="24"  y="6" width="6" height="8" fill="#888"></rect>
+            <rect x="32"  y="3" width="6" height="14" fill="#888"></rect>
+            <rect x="40"  y="4" width="6" height="12" fill="#888"></rect>
+            <rect x="48"  y="2" width="6" height="16" fill="#888"></rect>
+            <rect x="56"  y="5" width="6" height="10" fill="#888"></rect>
+            <rect x="64"  y="6" width="6" height="8"  fill="#888"></rect>
+            <rect x="72"  y="8" width="6" height="4"  fill="#888"></rect>
+            <rect x="80"  y="9" width="6" height="2"  fill="#888"></rect>
+            <rect x="88"  y="7" width="6" height="6"  fill="#888"></rect>
+            <rect x="96"  y="5" width="6" height="10" fill="#888"></rect>
+            <rect x="104" y="4" width="6" height="12" fill="#888"></rect>
+          </svg>
+        </td>
+        <td class="hint">00:00:01</td>
+      </tr>
+      <tr>
+        <td><input type="checkbox"></td>
+        <td>Pump_01.Status</td>
+        <td>BOOL</td>
+        <td class="value bool-true">TRUE (1)</td>
+        <td>Good</td>
+        <td class="spark">
+          <svg width="110" height="20" viewBox="0 0 110 20" aria-label="trend placeholder">
+            <rect x="0"   y="3"  width="6" height="14" fill="#666"></rect>
+            <rect x="8"   y="3"  width="6" height="14" fill="#666"></rect>
+            <rect x="16"  y="3"  width="6" height="14" fill="#666"></rect>
+            <rect x="24"  y="14" width="6" height="3"  fill="#aaa"></rect>
+            <rect x="32"  y="14" width="6" height="3"  fill="#aaa"></rect>
+            <rect x="40"  y="3"  width="6" height="14" fill="#666"></rect>
+            <rect x="48"  y="3"  width="6" height="14" fill="#666"></rect>
+            <rect x="56"  y="3"  width="6" height="14" fill="#666"></rect>
+            <rect x="64"  y="3"  width="6" height="14" fill="#666"></rect>
+            <rect x="72"  y="14" width="6" height="3"  fill="#aaa"></rect>
+            <rect x="80"  y="3"  width="6" height="14" fill="#666"></rect>
+            <rect x="88"  y="3"  width="6" height="14" fill="#666"></rect>
+            <rect x="96"  y="3"  width="6" height="14" fill="#666"></rect>
+            <rect x="104" y="3"  width="6" height="14" fill="#666"></rect>
+          </svg>
+        </td>
+        <td class="hint">00:00:01</td>
+      </tr>
+      <tr>
+        <td><input type="checkbox"></td>
+        <td>Tank.Level</td>
+        <td>REAL</td>
+        <td class="value">62.4</td>
+        <td>Good</td>
+        <td class="spark">
+          <svg width="110" height="20" viewBox="0 0 110 20" aria-label="trend placeholder">
+            <rect x="0"   y="6"  width="6" height="8"  fill="#888"></rect>
+            <rect x="8"   y="6"  width="6" height="8"  fill="#888"></rect>
+            <rect x="16"  y="5"  width="6" height="10" fill="#888"></rect>
+            <rect x="24"  y="7"  width="6" height="6"  fill="#888"></rect>
+            <rect x="32"  y="8"  width="6" height="4"  fill="#888"></rect>
+            <rect x="40"  y="7"  width="6" height="6"  fill="#888"></rect>
+            <rect x="48"  y="5"  width="6" height="10" fill="#888"></rect>
+            <rect x="56"  y="4"  width="6" height="12" fill="#888"></rect>
+            <rect x="64"  y="5"  width="6" height="10" fill="#888"></rect>
+            <rect x="72"  y="6"  width="6" height="8"  fill="#888"></rect>
+            <rect x="80"  y="7"  width="6" height="6"  fill="#888"></rect>
+            <rect x="88"  y="5"  width="6" height="10" fill="#888"></rect>
+            <rect x="96"  y="4"  width="6" height="12" fill="#888"></rect>
+            <rect x="104" y="5"  width="6" height="10" fill="#888"></rect>
+          </svg>
+        </td>
+        <td class="hint">00:00:01</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="btn-row" style="margin: 8px 12px;">
+    <button class="primary">⏸ Pause</button>
+    <button>Clear history</button>
+    <span class="hint">Refresh:</span>
+    <select>
+      <option selected>5 s</option>
+      <option>15 s</option>
+      <option>30 s</option>
+      <option>1 min</option>
+      <option>5 min</option>
+    </select>
+    <span style="margin-left:auto;"></span>
+    <button>Export values to CSV</button>
+  </div>
+
+  <div class="draft-note">
+    [DRAFT: question for user] The minimum poll period is 5 s. Sub-5s polling is intentionally
+    not exposed here — sustained sub-5s polling against a CompactLogix/ControlLogix is a
+    footgun (CPU load on the PLC, dropped requests, scanner-class interference). If a tech
+    needs fast ad-hoc reads, they should use the Diagnostics tab's one-shot read, or
+    Settings &rarr; Advanced &rarr; "Allow sub-5s polling on Monitor (not recommended)".
+    Confirm the SCADA convention is right for your environment.
+  </div>
+
+  <div class="statusbar">
+    <span>Connected 4m 32s &nbsp;|&nbsp; 14 reads/sec &nbsp;|&nbsp; 0 errors</span>
+    <span class="hint">3 watched tags • 360 samples buffered</span>
+  </div>
+
+</div>
+<script>
+  // Shared theme controller. Reads localStorage.plc-theme and applies the body class.
+  // Wired to .theme-toggle buttons if present. Defaults to dark.
+  (function () {
+    var b = document.body;
+    function apply(theme) {
+      if (theme === 'dark') b.classList.add('theme-dark');
+      else b.classList.remove('theme-dark');
+      var l = document.getElementById('theme-light');
+      var d = document.getElementById('theme-dark');
+      if (l) l.classList.toggle('is-active', theme === 'light');
+      if (d) d.classList.toggle('is-active', theme === 'dark');
+      try { localStorage.setItem('plc-theme', theme); } catch (e) {}
+    }
+    var saved = null;
+    try { saved = localStorage.getItem('plc-theme'); } catch (e) {}
+    if (saved !== 'light' && saved !== 'dark') saved = 'dark';
+    apply(saved);
+    var l = document.getElementById('theme-light');
+    var d = document.getElementById('theme-dark');
+    if (l) l.addEventListener('click', function () { apply('light'); });
+    if (d) d.addEventListener('click', function () { apply('dark'); });
+  })();
+</script>
+</body>
+</html>

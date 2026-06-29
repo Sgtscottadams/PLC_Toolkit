@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>03 — Discover PLCs (modal)</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="theme-dark">
+<div class="page">
+
+  <div class="crumbs">
+    Connection Manager &rarr; <b>Discover PLCs</b>
+    <span class="badge">1 click from launch</span>
+  </div>
+
+  <!-- Dimmed background -->
+  <div class="topbar">
+    <div class="title">PLC Toolkit</div>
+    <div class="actions">
+      <div class="theme-toggle" role="group" aria-label="Theme">
+        <button type="button" id="theme-light">Light</button>
+        <button type="button" id="theme-dark">Dark</button>
+      </div>
+
+      <span class="icon-btn">⚙ Settings</span>
+      <span class="icon-btn">? Help</span>
+    </div>
+  </div>
+
+  <div class="section-title">Saved connections</div>
+  <div class="panel" style="opacity:0.5;">
+    <div class="panel-header">Saved connections <span class="hint">(4)</span></div>
+    <div class="panel-body">
+      <div class="btn-row">
+        <button disabled>+ Connect to a new PLC</button>
+        <button disabled>Remove selected</button>
+        <button disabled>Rename selected</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusbar" style="opacity:0.5;">
+    <span>Status: Not connected.</span>
+    <span class="hint">Modal open.</span>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-backdrop">
+    <div class="modal wide" role="dialog" aria-labelledby="disc-title">
+      <div class="modal-header">
+        <span id="disc-title">Discover PLCs on the subnet</span>
+        <a class="icon-btn" href="01-connection-manager.html" aria-label="Close">✕</a>
+      </div>
+      <div class="modal-body">
+
+        <div class="field" style="align-items:flex-start;">
+          <label>Scope</label>
+          <div class="scope-section">
+            <div class="scope-row is-active">
+              <input type="radio" name="scope-mode" id="scope-auto" value="auto" checked>
+              <label for="scope-auto" class="scope-label">Auto (current network)</label>
+              <select class="scope-input" id="scope-auto-iface">
+                <option>Ethernet — 10.20.30.0 /24</option>
+                <option>Wi-Fi — 192.168.1.0 /24</option>
+                <option>Ethernet 2 — 172.16.0.0 /16</option>
+              </select>
+            </div>
+            <div class="scope-row is-dimmed">
+              <input type="radio" name="scope-mode" id="scope-ip" value="ip">
+              <label for="scope-ip" class="scope-label">Specific IP</label>
+              <input type="text" class="scope-input" id="scope-ip-input" placeholder="10.20.30.41">
+            </div>
+            <div class="scope-row is-dimmed">
+              <input type="radio" name="scope-mode" id="scope-subnet" value="subnet">
+              <label for="scope-subnet" class="scope-label">Custom subnet <span class="hint">(advanced)</span></label>
+              <input type="text" class="scope-input" id="scope-subnet-input" placeholder="10.20.30.0/24" style="min-width:180px;">
+            </div>
+          </div>
+        </div>
+
+        <div class="draft-note" style="margin: 4px 0 8px 148px;">
+          <b>Scope behavior — DRAFT notes for v2.0:</b><br>
+          &bull; <b>Auto:</b> shows the detected interface for visibility but in v2.0 the discovery
+          still broadcasts to 255.255.255.255 on every interface. Subnet-scoped discovery via
+          custom UDP socket is a v2.1 feature.<br>
+          &bull; <b>Specific IP:</b> probes that one host only with a CIP ListIdentity unicast.
+          Faster than a subnet scan, ideal for verifying a single PLC.<br>
+          &bull; <b>Custom subnet:</b> uses our own loop, not pylogix's broadcast. Max recommended
+          size is /24 (254 hosts). /16 is too large for a single scan; split it into
+          multiple /24s.
+        </div>
+
+        <div class="field" style="align-items:flex-start;">
+          <label>Probe list</label>
+          <div>
+            <div class="checkbox-row">
+              <input type="checkbox" id="p-enip" checked>
+              <div>
+                <label for="p-enip">Allen-Bradley (Ethernet/IP)</label>
+                <div class="hint" style="margin: 2px 0 0 0;">UDP 44818 / TCP 44818</div>
+              </div>
+            </div>
+            <div class="checkbox-row disabled">
+              <input type="checkbox" id="p-modbus" disabled>
+              <label for="p-modbus">Modbus TCP &mdash; 502 <span class="hint">(future, disabled)</span></label>
+            </div>
+            <div class="checkbox-row disabled">
+              <input type="checkbox" id="p-opcua" disabled>
+              <label for="p-opcua">OPC UA Discovery &mdash; 4840 <span class="hint">(future, disabled)</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="primary">&#x25B6; Start scan</button>
+          <button>&#x25A0; Stop</button>
+          <span class="hint" style="margin-left:auto;" id="status-hint">Status: idle. Scope: Auto on Ethernet &mdash; 10.20.30.0 /24. 0 / 254 probed.</span>
+        </div>
+
+        <h3 style="margin: 12px 0 4px 0; font-size: 12px;">Results</h3>
+        <table class="grid">
+          <thead>
+            <tr>
+              <th style="width: 24px;"><input type="checkbox" disabled></th>
+              <th>IP</th>
+              <th>Port</th>
+              <th>Vendor</th>
+              <th>Identity</th>
+              <th>Response</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="6" class="empty" style="padding:14px;">No results yet. Click <b>Start scan</b>.</td></tr>
+          </tbody>
+        </table>
+
+      </div>
+      <div class="modal-footer">
+        <a class="btn" href="01-connection-manager.html">Close</a>
+        <button>+ Add selected to my connections <span class="hint">(0 selected)</span></button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+  // Shared theme controller. Reads localStorage.plc-theme and applies the body class.
+  // Wired to .theme-toggle buttons if present. Defaults to dark.
+  (function () {
+    var b = document.body;
+    function apply(theme) {
+      if (theme === 'dark') b.classList.add('theme-dark');
+      else b.classList.remove('theme-dark');
+      var l = document.getElementById('theme-light');
+      var d = document.getElementById('theme-dark');
+      if (l) l.classList.toggle('is-active', theme === 'light');
+      if (d) d.classList.toggle('is-active', theme === 'dark');
+      try { localStorage.setItem('plc-theme', theme); } catch (e) {}
+    }
+    var saved = null;
+    try { saved = localStorage.getItem('plc-theme'); } catch (e) {}
+    if (saved !== 'light' && saved !== 'dark') saved = 'dark';
+    apply(saved);
+    var l = document.getElementById('theme-light');
+    var d = document.getElementById('theme-dark');
+    if (l) l.addEventListener('click', function () { apply('light'); });
+    if (d) d.addEventListener('click', function () { apply('dark'); });
+  })();
+
+  // ---------- Discover dialog: scope mode ----------
+  // Three radio modes: auto (default), specific IP, custom subnet.
+  // The active row stays full opacity; inactive rows are dimmed. The custom
+  // subnet CIDR input is visible immediately when that radio is selected.
+  (function () {
+    var radios = document.querySelectorAll('input[name="scope-mode"]');
+    var rows   = document.querySelectorAll('.scope-row');
+    var status = document.getElementById('status-hint');
+
+    function describeScope(mode) {
+      if (mode === 'auto') {
+        var sel = document.getElementById('scope-auto-iface');
+        var ifaceText = sel && sel.options[sel.selectedIndex]
+          ? sel.options[sel.selectedIndex].text : 'current network';
+        return { label: 'Auto', detail: ifaceText, total: 254 };
+      }
+      if (mode === 'ip') {
+        var v = document.getElementById('scope-ip-input').value.trim() || '10.20.30.41';
+        return { label: 'Specific IP', detail: v, total: 1 };
+      }
+      if (mode === 'subnet') {
+        var cidr = document.getElementById('scope-subnet-input').value.trim() || '10.20.30.0/24';
+        return { label: 'Custom subnet', detail: cidr, total: 254 };
+      }
+      return { label: 'Auto', detail: 'current network', total: 254 };
+    }
+
+    function updateStatus(mode) {
+      if (!status) return;
+      var s = describeScope(mode);
+      status.textContent = 'Status: idle. Scope: ' + s.label + ' on ' + s.detail + '. 0 / ' + s.total + ' probed.';
+    }
+
+    function setActive(mode) {
+      rows.forEach(function (row) {
+        var radio = row.querySelector('input[type="radio"]');
+        if (radio && radio.value === mode) row.classList.add('is-active');
+        else row.classList.remove('is-active');
+        if (radio && radio.value === mode) row.classList.remove('is-dimmed');
+        else row.classList.add('is-dimmed');
+      });
+      updateStatus(mode);
+    }
+
+    radios.forEach(function (r) {
+      r.addEventListener('change', function () { if (r.checked) setActive(r.value); });
+    });
+    var iface = document.getElementById('scope-auto-iface');
+    if (iface) iface.addEventListener('change', function () { updateStatus('auto'); });
+    var ipIn = document.getElementById('scope-ip-input');
+    if (ipIn) ipIn.addEventListener('input', function () { updateStatus('ip'); });
+    var subIn = document.getElementById('scope-subnet-input');
+    if (subIn) subIn.addEventListener('input', function () { updateStatus('subnet'); });
+
+    // Set the initial dim/active state from whatever radio is checked on load.
+    var initial = document.querySelector('input[name="scope-mode"]:checked');
+    if (initial) setActive(initial.value);
+    else setActive('auto');
+  })();
+</script>
+
+</body>
+</html>

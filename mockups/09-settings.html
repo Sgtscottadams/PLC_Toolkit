@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>09 — Settings</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="theme-dark">
+<div class="page">
+
+  <div class="crumbs">
+    Connection Manager &rarr; <b>Settings</b>
+    <span class="badge">1 click from launch</span>
+  </div>
+
+  <!-- dimmed background chrome -->
+  <div class="topbar" style="opacity:0.5;">
+    <div class="title">PLC Toolkit</div>
+    <div class="actions">
+      <div class="theme-toggle" role="group" aria-label="Theme">
+        <button type="button" id="theme-light">Light</button>
+        <button type="button" id="theme-dark">Dark</button>
+      </div>
+
+      <span class="icon-btn">⚙ Settings</span>
+      <span class="icon-btn">? Help</span>
+    </div>
+  </div>
+  <div class="section-title" style="opacity:0.5;">Saved connections</div>
+  <div class="panel" style="opacity:0.5;">
+    <div class="panel-header">Saved connections <span class="hint">(4)</span></div>
+    <div class="panel-body"><div class="hint">…</div></div>
+  </div>
+  <div class="statusbar" style="opacity:0.5;">
+    <span>Status: Not connected.</span>
+    <span class="hint">Modal open.</span>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-backdrop">
+    <div class="modal wide" style="width: 760px;" role="dialog" aria-labelledby="set-title">
+      <div class="modal-header">
+        <span id="set-title">Settings</span>
+        <a class="icon-btn" href="01-connection-manager.html" aria-label="Close">✕</a>
+      </div>
+      <div class="modal-body" style="max-height: 70vh; overflow: auto;">
+
+        <!-- ============== Connection ============== -->
+        <div class="section">
+          <h3>Connection</h3>
+
+          <div class="field">
+            <label for="s-timeout">Default connection timeout (s)</label>
+            <input id="s-timeout" type="number" value="5" min="1" max="60" style="flex:0 0 80px;">
+            <span class="hint">Used when no per-connection value is set.</span>
+          </div>
+
+          <div class="field">
+            <label for="s-retry">Connect retries</label>
+            <input id="s-retry" type="number" value="3" min="0" max="10" style="flex:0 0 80px;">
+          </div>
+
+          <div class="field">
+            <label for="s-retrydelay">Retry delay (ms)</label>
+            <input id="s-retrydelay" type="number" value="500" min="0" max="10000" step="100" style="flex:0 0 100px;">
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="s-autoreconnect" checked>
+            <label for="s-autoreconnect">Auto-reconnect on dropped session</label>
+          </div>
+
+          <div class="field">
+            <label for="s-defaultport">Default port</label>
+            <input id="s-defaultport" type="number" value="44818" style="flex:0 0 100px;">
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="s-verify-ip" checked>
+            <label for="s-verify-ip">Verify IP is reachable before opening CIP session</label>
+          </div>
+
+          <h4 style="margin: 12px 0 6px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--color-fg-muted);">Discovery defaults</h4>
+
+          <div class="field">
+            <label for="s-disc-network">Default network</label>
+            <input id="s-disc-network" type="text" placeholder="(auto from interface)" style="flex:0 0 200px;">
+            <span class="hint">Used by the Discover dialog's "Custom subnet" mode. Leave blank to use the detected interface network.</span>
+          </div>
+
+          <div class="field">
+            <label for="s-disc-cidr">Default CIDR</label>
+            <select id="s-disc-cidr">
+              <option>/16</option>
+              <option>/20</option>
+              <option selected>/24</option>
+              <option>/25</option>
+              <option>/26</option>
+              <option>/27</option>
+              <option>/28</option>
+            </select>
+            <span class="hint">Default /24 (254 hosts). &le;/24 only; larger ranges exceed the per-scan host cap.</span>
+          </div>
+        </div>
+
+        <!-- ============== Polling & display ============== -->
+        <div class="section">
+          <h3>Polling &amp; display</h3>
+
+          <div class="field">
+            <label for="s-pollrate">Default poll rate</label>
+            <select id="s-pollrate">
+              <option selected>5 s</option>
+              <option>15 s</option>
+              <option>30 s</option>
+              <option>1 min</option>
+              <option>5 min</option>
+            </select>
+            <span class="hint">Minimum 5 s. Sub-5s polling against a CompactLogix/ControlLogix is restricted.</span>
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="s-symbolic" checked disabled>
+            <label for="s-symbolic">Use symbolic addressing (CIP path = tag name) <span class="hint">— pylogix default; always on</span></label>
+          </div>
+
+          <div class="field">
+            <label for="s-fmt-bool">BOOL display</label>
+            <select id="s-fmt-bool">
+              <option selected>0 / 1</option>
+              <option>FALSE / TRUE</option>
+              <option>Off / On</option>
+            </select>
+            <span class="hint">Default 0/1 matches the Studio 5000 tag display.</span>
+          </div>
+
+          <div class="field">
+            <label for="s-trend">Default trend window (samples)</label>
+            <input id="s-trend" type="number" value="60" min="10" max="1000" style="flex:0 0 100px;">
+          </div>
+        </div>
+
+        <!-- ============== Discovery ============== -->
+        <div class="section">
+          <h3>Discovery</h3>
+
+          <div class="field">
+            <label for="s-conc">Probe concurrency</label>
+            <input id="s-conc" type="number" value="50" min="1" max="254" style="flex:0 0 100px;">
+            <span class="hint">Max parallel probes during a subnet scan. Subnet scan uses our own loop, not pylogix's broadcast.</span>
+          </div>
+
+          <div class="field">
+            <label for="s-probetimeout">Per-probe timeout (ms)</label>
+            <input id="s-probetimeout" type="number" value="500" min="100" max="5000" style="flex:0 0 100px;">
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="s-rememberiface">
+            <label for="s-rememberiface">Remember last interface between sessions</label>
+          </div>
+
+          <div class="draft-note">
+            [DRAFT: question for user] Probe checkboxes (EtherNet/IP, CSPv4, SLC EtherNet) used to
+            live here. They were removed in v2.0 because pylogix only supports EtherNet/IP on
+            44818. CSPv4 and SLC legacy would require raw socket code against the DF1 / CSPv4
+            specs (1-2 weeks of work each) and even then would not return named tags, only
+            data file addresses. The discover dialog's probe list shows the same explanation.
+          </div>
+        </div>
+
+        <!-- ============== Storage ============== -->
+        <div class="section">
+          <h3>Storage</h3>
+
+          <div class="field">
+            <label for="s-dbpath">Database path</label>
+            <input id="s-dbpath" type="text" value="%APPDATA%\PLCToolkit\plc_data.db">
+            <button>Browse…</button>
+          </div>
+
+          <div class="field">
+            <label for="s-scansdir">Scan archives</label>
+            <input id="s-scansdir" type="text" value="%APPDATA%\PLCToolkit\plc_scans\">
+            <button>Browse…</button>
+          </div>
+
+          <div class="field">
+            <label for="s-retain">Retain history (days)</label>
+            <input id="s-retain" type="number" value="90" min="1" max="3650" style="flex:0 0 100px;">
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="s-prune" checked>
+            <label for="s-prune">Auto-prune scans older than retention window</label>
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="s-encrypt">
+            <label for="s-encrypt">Encrypt local database (SQLCipher) <span class="hint">— planned for v2.1; pylogix does not yet support SQLCipher</span></label>
+          </div>
+        </div>
+
+        <!-- ============== Export ============== -->
+        <div class="section">
+          <h3>Export</h3>
+
+          <div class="field">
+            <label for="s-exportdir">Default export folder</label>
+            <input id="s-exportdir" type="text" value="%USERPROFILE%\Documents\PLCToolkit\exports">
+            <button>Browse…</button>
+          </div>
+
+          <div class="field">
+            <label for="s-fname">Filename template</label>
+            <input id="s-fname" type="text" value="{nickname}_{YYYY-MM-DD}_{HHmm}">
+            <span class="hint">Tokens: {nickname}, {ip}, {slot}, {YYYY-MM-DD}, {HHmm}</span>
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="s-xlsx" checked>
+            <label for="s-xlsx">Excel (.xlsx) by default</label>
+          </div>
+          <div class="checkbox-row">
+            <input type="checkbox" id="s-json" checked>
+            <label for="s-json">JSON by default</label>
+          </div>
+          <div class="checkbox-row">
+            <input type="checkbox" id="s-xml" checked>
+            <label for="s-xml">XML by default</label>
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="s-openaft">
+            <label for="s-openaft">Open output folder when export finishes</label>
+          </div>
+        </div>
+
+        <!-- ============== Advanced ============== -->
+        <div class="section">
+          <h3>Advanced</h3>
+
+          <div class="field">
+            <label for="s-loglevel">Log level</label>
+            <select id="s-loglevel">
+              <option>DEBUG</option>
+              <option selected>INFO</option>
+              <option>WARNING</option>
+              <option>ERROR</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="s-logpath">Log file path</label>
+            <input id="s-logpath" type="text" value="%APPDATA%\PLCToolkit\logs\">
+          </div>
+
+          <div class="field">
+            <label for="s-uichrome">UI theme</label>
+            <select id="s-uichrome">
+              <option selected>Dark (default)</option>
+              <option>Light</option>
+            </select>
+            <span class="hint">User-overrides the default dark theme. Per-screen toggle is also available.</span>
+          </div>
+        </div>
+          <div class="draft-note">
+            [DRAFT: question for user] "UI theme" wasn't in the original settings list; included
+            under Advanced as a placeholder because dark mode is usually requested. Remove if not
+            wanted in v1.
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <a class="btn" href="01-connection-manager.html">Cancel</a>
+        <button>Reset to defaults</button>
+        <button class="primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+  // Shared theme controller. Reads localStorage.plc-theme and applies the body class.
+  // Wired to .theme-toggle buttons if present. Defaults to dark.
+  (function () {
+    var b = document.body;
+    function apply(theme) {
+      if (theme === 'dark') b.classList.add('theme-dark');
+      else b.classList.remove('theme-dark');
+      var l = document.getElementById('theme-light');
+      var d = document.getElementById('theme-dark');
+      if (l) l.classList.toggle('is-active', theme === 'light');
+      if (d) d.classList.toggle('is-active', theme === 'dark');
+      try { localStorage.setItem('plc-theme', theme); } catch (e) {}
+    }
+    var saved = null;
+    try { saved = localStorage.getItem('plc-theme'); } catch (e) {}
+    if (saved !== 'light' && saved !== 'dark') saved = 'dark';
+    apply(saved);
+    var l = document.getElementById('theme-light');
+    var d = document.getElementById('theme-dark');
+    if (l) l.addEventListener('click', function () { apply('light'); });
+    if (d) d.addEventListener('click', function () { apply('dark'); });
+  })();
+</script>
+</body>
+</html>

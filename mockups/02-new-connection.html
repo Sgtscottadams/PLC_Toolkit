@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>02 — New Connection (modal)</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="theme-dark">
+<div class="page">
+
+  <!-- Crumb -->
+  <div class="crumbs">
+    Connection Manager &rarr; <b>New Connection</b>
+    <span class="badge">1 click from launch</span>
+  </div>
+
+  <!-- Background: dimmed Connection Manager, same as 01 -->
+  <div class="topbar">
+    <div class="title">PLC Toolkit</div>
+    <div class="actions">
+      <div class="theme-toggle" role="group" aria-label="Theme">
+        <button type="button" id="theme-light">Light</button>
+        <button type="button" id="theme-dark">Dark</button>
+      </div>
+
+      <span class="icon-btn">⚙ Settings</span>
+      <span class="icon-btn">? Help</span>
+    </div>
+  </div>
+
+  <div class="section-title">Saved connections</div>
+  <div class="panel" style="opacity:0.5;">
+    <div class="panel-header">Saved connections <span class="hint">(4)</span></div>
+    <div class="panel-body tight">
+      <ul class="conn-list">
+        <li>
+          <input type="checkbox" disabled>
+          <span><b>Compressor Skid A</b></span>
+          <span class="col-ip">10.20.30.41</span>
+          <span class="col-slot">slot 0</span>
+          <span class="col-when">last seen 0h ago</span>
+          <span><button class="primary" disabled>Connect</button></span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="statusbar" style="opacity:0.5;">
+    <span>Status: Not connected.</span>
+    <span class="hint">Modal open.</span>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-backdrop">
+    <div class="modal" role="dialog" aria-labelledby="nc-title">
+      <div class="modal-header">
+        <span id="nc-title">Connect to a new PLC</span>
+        <a class="icon-btn" href="01-connection-manager.html" aria-label="Close">✕</a>
+      </div>
+      <div class="modal-body">
+
+        <div class="field">
+          <label for="nc-nick">Nickname</label>
+          <input id="nc-nick" type="text" placeholder="e.g. Compressor Skid A">
+        </div>
+
+        <div class="field">
+          <label for="nc-ip">IP Address</label>
+          <input id="nc-ip" type="text" placeholder="e.g. 10.20.30.41">
+        </div>
+
+        <div class="field">
+          <label for="nc-slot">Processor Slot</label>
+          <input id="nc-slot" type="number" value="0" min="0" max="16" style="flex:0 0 80px;">
+          <span class="hint">Default 0. Most ControlLogix/CompactLogix are slot 0.</span>
+        </div>
+
+        <div class="field" style="align-items:flex-start;">
+          <label>&nbsp;</label>
+          <div>
+            <a class="inline-link" href="#advanced" id="adv-toggle">▸ Show advanced</a>
+            <div class="advanced" id="advanced" hidden>
+              <div class="field">
+                <label for="nc-cip">CIP Path</label>
+                <input id="nc-cip" type="text" placeholder="e.g. 1,0">
+                <span class="hint">Backplane path; leave blank for default (slot only).</span>
+              </div>
+              <div class="field">
+                <label for="nc-port">Port</label>
+                <input id="nc-port" type="number" value="44818" style="flex:0 0 100px;">
+              </div>
+              <div class="field">
+                <label for="nc-timeout">Timeout (s)</label>
+                <input id="nc-timeout" type="number" value="5" style="flex:0 0 80px;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- [DRAFT: question for user] -->
+        <div class="draft-note">
+          [DRAFT: question for user] The spec lists CIP Path under "Show advanced" but doesn't say
+          whether Port and Timeout should also be hidden or always visible. I put them inside
+          advanced too; alternative is to keep Port at top level and hide only CIP Path.
+        </div>
+
+        <div class="checkbox-row">
+          <input type="checkbox" id="nc-save" checked>
+          <label for="nc-save">Save to my connections (checked by default)</label>
+        </div>
+
+      </div>
+
+      <!-- Test connection result panel (hidden by default; shown after a test runs) -->
+      <div class="modal-body" id="nc-test-result" hidden>
+        <div class="test-result" data-state="idle">
+          <span class="test-result-glyph" aria-hidden="true">·</span>
+          <span class="test-result-text">Run a test connection to verify reachability and slot before saving.</span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <a class="btn secondary" href="#" id="nc-test-btn">⟳ Test connection</a>
+        <span style="margin-left:auto;"></span>
+        <a class="btn" href="01-connection-manager.html">Cancel</a>
+        <a class="btn primary" href="04-workspace-browse.html">Connect</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+  // Shared theme controller. Reads localStorage.plc-theme and applies the body class.
+  // Wired to .theme-toggle buttons if present. Defaults to dark.
+  (function () {
+    var b = document.body;
+    function apply(theme) {
+      if (theme === 'dark') b.classList.add('theme-dark');
+      else b.classList.remove('theme-dark');
+      var l = document.getElementById('theme-light');
+      var d = document.getElementById('theme-dark');
+      if (l) l.classList.toggle('is-active', theme === 'light');
+      if (d) d.classList.toggle('is-active', theme === 'dark');
+      try { localStorage.setItem('plc-theme', theme); } catch (e) {}
+    }
+    var saved = null;
+    try { saved = localStorage.getItem('plc-theme'); } catch (e) {}
+    if (saved !== 'light' && saved !== 'dark') saved = 'dark';
+    apply(saved);
+    var l = document.getElementById('theme-light');
+    var d = document.getElementById('theme-dark');
+    l.addEventListener('click', function () { apply('light'); });
+    d.addEventListener('click', function () { apply('dark'); });
+  })();
+
+  // Test Connection — visual mockup only. The real implementation will:
+  //   1. Read the IP, slot, port, timeout from the form fields.
+  //   2. Open a temporary pylogix.PLC connection.
+  //   3. Call PLC.GetDeviceProperties() to confirm the host responds and the slot is correct.
+  //   4. Close the connection and report the result.
+  // In the wireframe we just toggle between result states on click.
+  (function () {
+    var btn = document.getElementById('nc-test-btn');
+    var panel = document.getElementById('nc-test-result');
+    if (!btn || !panel) return;
+    var states = [
+      { state: 'pending', glyph: '⟳', text: 'Testing 10.20.30.41 slot 0… (1.2s elapsed)' },
+      { state: 'success', glyph: '✓', text: "Compressor Skid A — 1756-L73/B, Rev 30.11 (response: 18ms)" },
+      { state: 'error',   glyph: '✗', text: 'Connection timed out after 10s. Check IP, network, and PLC power.' },
+      { state: 'error',   glyph: '✗', text: 'CIP error: "Path destination unknown" (slot 2 not responding)' }
+    ];
+    var i = 0;
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      panel.hidden = false;
+      var s = states[i % states.length];
+      i++;
+      var r = panel.querySelector('.test-result');
+      r.setAttribute('data-state', s.state);
+      r.querySelector('.test-result-glyph').textContent = s.glyph;
+      r.querySelector('.test-result-text').textContent = s.text;
+    });
+  })();
+</script>
+</body>
+</html>

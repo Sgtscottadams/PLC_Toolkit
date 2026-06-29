@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(/Users/scottadams/Python/next_modbus/.venv/bin/python /Users/scottadams/Python/ab_poller/discovery_tool.py)"
-    ],
-    "deny": [],
-    "ask": []
-  }
-}

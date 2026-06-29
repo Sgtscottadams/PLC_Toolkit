@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>06 — Workspace: Export</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="theme-dark">
+<div class="page">
+
+  <div class="crumbs">
+    Connection Manager &rarr; Compressor Skid A &rarr; <b>Export</b>
+    <span class="badge">2 clicks from launch</span>
+  </div>
+
+  <div class="topbar">
+        <div class="topbar-left">
+      <a class="back-link" href="01-connection-manager.html" title="Back to Connections (keeps the PLC connection alive)">
+        <span class="arrow" aria-hidden="true">&#8592;</span><span>Connections</span>
+      </a>
+    </div>
+<div class="title">
+      Workspace — Compressor Skid A <span class="hint">(10.20.30.41, slot 0)</span>
+    </div>
+    <div class="actions">
+      <div class="theme-toggle" role="group" aria-label="Theme">
+        <button type="button" id="theme-light">Light</button>
+        <button type="button" id="theme-dark">Dark</button>
+      </div>
+
+      <a class="btn" href="01-connection-manager.html">Disconnect</a>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <a class="tab" href="04-workspace-browse.html">Browse</a>
+    <a class="tab" href="05-workspace-monitor.html">Monitor</a>
+    <a class="tab active" href="06-workspace-export.html">Export*</a>
+    <a class="tab" href="07-workspace-history.html">History</a>
+    <a class="tab" href="08-workspace-diagnostics.html">Diagnostics</a>
+  </div>
+
+  <div class="section">
+
+    <h3>Source</h3>
+
+    <div class="radio-row">
+      <input type="radio" id="src-tree" name="src" checked>
+      <label for="src-tree">
+        <b>Current in-memory tag tree</b>
+        <span class="hint">— 142 tags from this session's Re-discover</span>
+      </label>
+    </div>
+
+    <div class="radio-row">
+      <input type="radio" id="src-sel" name="src" disabled>
+      <label for="src-sel">
+        Selected tags only <span class="hint">(0 selected)</span>
+      </label>
+    </div>
+
+    <div class="radio-row">
+      <input type="radio" id="src-scan" name="src">
+      <label for="src-scan">
+        Last scan from history
+        <span class="hint">— 2026-06-15 14:22:07 (148 tags)</span>
+      </label>
+    </div>
+
+  </div>
+
+  <div class="section">
+
+    <h3>Formats</h3>
+
+    <div class="checkbox-row">
+      <input type="checkbox" id="fmt-xlsx" checked>
+      <label for="fmt-xlsx">Excel (.xlsx) — one sheet per UDT, all tags flattened</label>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="fmt-json" checked>
+      <label for="fmt-json">JSON — nested object preserving UDT structure</label>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="fmt-xml" checked>
+      <label for="fmt-xml">XML — CIP-style tag path per element</label>
+    </div>
+
+  </div>
+
+  <div class="section">
+
+    <h3>Output</h3>
+
+    <div class="field">
+      <label for="exp-folder">Output folder</label>
+      <input id="exp-folder" type="text" value="C:\Users\adamssc\Documents\PLC Toolkit\exports">
+      <button>Browse…</button>
+    </div>
+
+    <div class="field">
+      <label for="exp-name">Filename</label>
+      <input id="exp-name" type="text" value="CompressorSkidA_2026-06-16_1015">
+      <span class="hint">Auto-generated from PLC nickname + timestamp. Editable.</span>
+    </div>
+
+    <div class="draft-note">
+      [DRAFT: question for user] When multiple formats are checked, do we write one file per format
+      (CompressorSkidA_*.xlsx + .json + .xml) or one zipped bundle? Drawn as separate files for now.
+    </div>
+
+    <div class="btn-row" style="margin-top: 8px;">
+      <button class="primary">Export</button>
+      <span class="hint" style="margin-left: 8px;">3 formats selected • source: current tree</span>
+    </div>
+
+  </div>
+
+  <div class="statusbar">
+    <span>Status: Ready.</span>
+    <span class="hint">Last export: 2026-06-15 14:23:02 → 3 files (4.1 MB)</span>
+  </div>
+
+</div>
+<script>
+  // Shared theme controller. Reads localStorage.plc-theme and applies the body class.
+  // Wired to .theme-toggle buttons if present. Defaults to dark.
+  (function () {
+    var b = document.body;
+    function apply(theme) {
+      if (theme === 'dark') b.classList.add('theme-dark');
+      else b.classList.remove('theme-dark');
+      var l = document.getElementById('theme-light');
+      var d = document.getElementById('theme-dark');
+      if (l) l.classList.toggle('is-active', theme === 'light');
+      if (d) d.classList.toggle('is-active', theme === 'dark');
+      try { localStorage.setItem('plc-theme', theme); } catch (e) {}
+    }
+    var saved = null;
+    try { saved = localStorage.getItem('plc-theme'); } catch (e) {}
+    if (saved !== 'light' && saved !== 'dark') saved = 'dark';
+    apply(saved);
+    var l = document.getElementById('theme-light');
+    var d = document.getElementById('theme-dark');
+    if (l) l.addEventListener('click', function () { apply('light'); });
+    if (d) d.addEventListener('click', function () { apply('dark'); });
+  })();
+</script>
+</body>
+</html>
