@@ -33,7 +33,13 @@ from typing import Optional
 import pylogix
 from pylogix import PLC
 
+import plck.pylogix_patches as _pylogix_patches
 from plck.device_filter import filter_tag_readable_devices
+
+# Make pylogix's UDT template discovery resilient to controllers that
+# reject/time out the template service (otherwise GetTagList crashes with
+# 'NoneType' object is not subscriptable). Applied once at import.
+_pylogix_patches.install()
 from plck.errors import (
     PlcError, PlcTimeout, PlcAuthError, PlcUnsupported, PlcCommError,
 )

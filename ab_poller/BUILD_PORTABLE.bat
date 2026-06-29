@@ -37,10 +37,10 @@ if "%EXITCODE%"=="0" (
     echo =============================================
     echo.
     echo Copy to server:
-    echo   dist_package\PLC_Toolkit_Windows.zip
+    echo   dist_package\PLC_Toolkit.zip
     echo.
-    echo Extract the zip on the server, then run Run_Toolkit.bat
-    echo inside the extracted PLC_Toolkit folder.
+    echo Extract the zip (one PLC_Toolkit folder), then double-click
+    echo PLC_Toolkit.exe inside it.
     echo.
 ) else (
     echo =============================================

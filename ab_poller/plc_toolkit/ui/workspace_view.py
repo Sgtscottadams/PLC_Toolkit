@@ -39,6 +39,7 @@ from PySide6.QtWidgets import (
 import plck
 from plck.comms import PLCClient
 from plck.db import DatabaseManager
+from plck.device_filter import unsupported_device_message
 from plck.errors import PlcError
 from plck.models import PlcConnection, ReadResult, TagDataType, TagNode, TagTree
 from plck.tag_display import format_type_label
@@ -2078,6 +2079,9 @@ class WorkspaceView(QWidget):
         worker.signals.failed.connect(
             lambda msg, e=epoch: self._on_discovery_failed_guarded(msg, e)
         )
+        worker.signals.unsupported.connect(
+            lambda plc_obj, e=epoch: self._on_discovery_unsupported_guarded(plc_obj, e)
+        )
         worker.start()
         self._discovery_worker = worker
         self.diagnostics_tab.log_event(
@@ -2167,6 +2171,37 @@ class WorkspaceView(QWidget):
         if not self._connected or epoch != self._connection_epoch:
             return
         self._on_discovery_failed(message)
+
+    def _on_discovery_unsupported_guarded(
+        self, plc_obj: PlcConnection, epoch: int
+    ) -> None:
+        if not self._connected or epoch != self._connection_epoch:
+            return
+        self._on_discovery_unsupported(plc_obj)
+
+    def _on_discovery_unsupported(self, plc_obj: PlcConnection) -> None:
+        """A direct/manual connection reached a non-Logix device. Show a
+        clear 'not supported' message naming the device type, then return
+        to the Connection Manager (we cannot browse this device)."""
+        self.browse_tab.set_discovery_active(False)
+        name = plc_obj.product_name or "Unknown device"
+        self.status_label.setText(f"Unsupported device: {name}")
+        self.diagnostics_tab.log_event(
+            f"CONNECT blocked: unsupported device {name} at {plc_obj.ip}"
+        )
+        self._stop_workers()
+        # Persist the discovered identity so the Connection Manager can
+        # block this device up-front next time (its check keys off
+        # product_name), and the list shows the real device type.
+        try:
+            self.db.upsert_plc(plc_obj)
+        except Exception as e:
+            self.diagnostics_tab.log_event(f"DB write failed: {e}")
+        QMessageBox.warning(
+            self, "Device not supported",
+            unsupported_device_message(plc_obj.product_name),
+        )
+        self.disconnected.emit()
 
     def _on_discovery_progress(self, msg: str) -> None:
         self.status_label.setText(msg)

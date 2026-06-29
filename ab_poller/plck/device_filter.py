@@ -33,6 +33,28 @@ CATALOG_FAMILY_NAMES: tuple[tuple[str, str], ...] = (
     ("2085-L", "Micro850"),
 )
 
+# Common Allen-Bradley families that answer on EtherNet/IP but are NOT
+# Logix tag-readable controllers. Used only to produce a friendly,
+# specific "not supported" message (e.g. naming a MicroLogix). Order
+# matters: more specific prefixes first.
+NON_LOGIX_FAMILY_PREFIXES: tuple[tuple[str, str], ...] = (
+    ("1766", "MicroLogix 1400"),
+    ("1764", "MicroLogix 1500"),
+    ("1763", "MicroLogix 1100"),
+    ("1762", "MicroLogix 1200"),
+    ("1761", "MicroLogix 1000"),
+    ("1747", "SLC 500"),
+    ("1746", "SLC 500"),
+    ("1785", "PLC-5"),
+    ("1789", "SoftLogix"),
+    ("2711", "PanelView"),
+    ("1783", "Stratix switch"),
+    ("1734", "POINT I/O adapter"),
+    ("1794", "FLEX I/O adapter"),
+    ("20", "PowerFlex drive"),
+    ("25", "PowerFlex drive"),
+)
+
 _ROCKWELL_VENDOR_ALIASES = (
     "rockwell",
     "allen-bradley",
@@ -132,14 +154,34 @@ def filter_tag_readable_devices(devices: list[dict]) -> list[dict]:
     return out
 
 
+def describe_device_type(product_name: str | None) -> str:
+    """Best-effort friendly device-type label for messages.
+
+    Prefers the supported Logix family label; otherwise tries known
+    non-Logix Allen-Bradley families (MicroLogix, SLC, PLC-5, etc.);
+    otherwise falls back to the raw catalog / product string.
+    """
+    catalog = normalize_product_name(product_name)
+    family = device_family_name(product_name)
+    if family:
+        return f"{family} ({catalog})" if catalog else family
+    for prefix, label in NON_LOGIX_FAMILY_PREFIXES:
+        if catalog.startswith(prefix):
+            return f"{label} ({catalog})" if catalog else label
+    if catalog:
+        return catalog
+    raw = (product_name or "").strip()
+    return raw or "This device"
+
+
 def unsupported_device_message(product_name: str | None) -> str:
     """Operator-facing explanation when a device is not tag-readable."""
-    label = (product_name or "").strip() or "This device"
+    desc = describe_device_type(product_name)
     return (
-        f"{label} is not a Logix-family PLC that PLC Toolkit can browse.\n\n"
-        "Toolkit supports ControlLogix, CompactLogix, and Micro800 "
-        "controllers (catalog prefixes 1756-L, 1769-L, 5069-L, 2080-L, "
-        "2085-L).\n\n"
-        "PanelViews, Stratix switches, and communication modules are "
-        "filtered out of subnet discovery."
+        f"{desc} is not supported by PLC Toolkit.\n\n"
+        "PLC Toolkit can browse and monitor Logix-family controllers "
+        "only: ControlLogix, CompactLogix, and Micro800 (catalog "
+        "prefixes 1756-L, 1769-L, 5069-L, 2080-L, 2085-L).\n\n"
+        "MicroLogix, SLC 500, PLC-5, PanelViews, Stratix switches, and "
+        "communication modules use protocols this tool does not read."
     )
