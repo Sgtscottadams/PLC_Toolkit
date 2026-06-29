@@ -30,7 +30,8 @@ from PySide6.QtWidgets import (
     QAbstractItemView, QApplication, QButtonGroup, QCheckBox, QComboBox,
     QFileDialog, QFormLayout,
     QFrame, QGridLayout, QHBoxLayout, QHeaderView, QLabel, QLineEdit,
-    QListWidget, QListWidgetItem, QMessageBox, QPushButton, QRadioButton,
+    QListWidget, QListWidgetItem, QMessageBox, QProgressDialog,
+    QPushButton, QRadioButton,
     QSplitter, QSizePolicy,
     QTableWidget, QTableWidgetItem, QTabWidget, QTextEdit,
     QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget,
@@ -1910,6 +1911,7 @@ class WorkspaceView(QWidget):
         self._last_scan_id: Optional[int] = None
         self._scan_source = "manual"
         self._discovery_worker: Optional[DiscoveryWorker] = None
+        self._discovery_dialog: Optional[QProgressDialog] = None
         self._monitor_worker: Optional[MonitorWorker] = None
         self._connected = False
         self._connection_epoch = 0
@@ -2063,6 +2065,9 @@ class WorkspaceView(QWidget):
     def _run_discovery(self, plc: PlcConnection, banner: str = "") -> None:
         self._stop_discovery_worker()
         self.browse_tab.set_discovery_active(True, banner or f"Connecting to {plc.ip}…")
+        self._show_discovery_dialog(
+            banner or f"Connecting to {plc.ip} (slot {plc.slot})…"
+        )
         worker = DiscoveryWorker(
             plc, timeout_s=self.settings.connection_timeout_s
         )
@@ -2183,6 +2188,7 @@ class WorkspaceView(QWidget):
         """A direct/manual connection reached a non-Logix device. Show a
         clear 'not supported' message naming the device type, then return
         to the Connection Manager (we cannot browse this device)."""
+        self._close_discovery_dialog()
         self.browse_tab.set_discovery_active(False)
         name = plc_obj.product_name or "Unknown device"
         self.status_label.setText(f"Unsupported device: {name}")
@@ -2190,13 +2196,13 @@ class WorkspaceView(QWidget):
             f"CONNECT blocked: unsupported device {name} at {plc_obj.ip}"
         )
         self._stop_workers()
-        # Persist the discovered identity so the Connection Manager can
-        # block this device up-front next time (its check keys off
-        # product_name), and the list shows the real device type.
+        # An unsupported device must never live in the saved connections
+        # list — only devices we can actually browse belong there. Remove
+        # it if it was saved (e.g. added via "Save & connect").
         try:
-            self.db.upsert_plc(plc_obj)
+            self.db.remove_plc(plc_obj.ip, plc_obj.slot)
         except Exception as e:
-            self.diagnostics_tab.log_event(f"DB write failed: {e}")
+            self.diagnostics_tab.log_event(f"DB cleanup failed: {e}")
         QMessageBox.warning(
             self, "Device not supported",
             unsupported_device_message(plc_obj.product_name),
@@ -2206,10 +2212,18 @@ class WorkspaceView(QWidget):
     def _on_discovery_progress(self, msg: str) -> None:
         self.status_label.setText(msg)
         self.browse_tab.update_discovery_progress(msg)
+        if self._discovery_dialog is not None:
+            self._discovery_dialog.setLabelText(msg)
 
     def _on_discovery_finished(self, tree: TagTree) -> None:
+        self._close_discovery_dialog()
         self._tree = tree
         self.browse_tab.load_tree(tree)
+        # Refresh the Diagnostics summary with the live device info now that
+        # get_device_info() has populated vendor / serial / product / revision
+        # (these aren't persisted in the saved-connection row, so the initial
+        # pre-discovery summary showed '?').
+        self.diagnostics_tab.set_connection(tree.plc)
         n = tree.count()
         leaves = tree.leaf_count()
         elapsed = tree.discovery_duration_s
@@ -2252,6 +2266,7 @@ class WorkspaceView(QWidget):
             self.diagnostics_tab.log_event(f"Scan values save failed: {e}")
 
     def _on_discovery_failed(self, message: str) -> None:
+        self._close_discovery_dialog()
         self.browse_tab.set_discovery_active(False)
         self.status_label.setText(f"Discovery failed: {message}")
         self.diagnostics_tab.log_event(f"DISCOVERY failed: {message}")
@@ -2259,6 +2274,41 @@ class WorkspaceView(QWidget):
             self, "Discovery failed",
             f"Could not discover tags: {message}",
         )
+
+    # -- Discovery progress dialog --------------------------------------
+
+    def _show_discovery_dialog(self, message: str) -> None:
+        """Modal busy dialog so a 20–30s discovery is obviously working."""
+        self._close_discovery_dialog()
+        dlg = QProgressDialog(message, "Cancel", 0, 0, self)
+        dlg.setWindowTitle("Discovering tags")
+        dlg.setWindowModality(Qt.WindowModal)
+        dlg.setMinimumDuration(0)        # show immediately
+        dlg.setAutoClose(False)
+        dlg.setAutoReset(False)
+        dlg.setValue(0)                  # range (0,0) => indeterminate/busy bar
+        dlg.canceled.connect(self._on_discovery_cancelled)
+        self._discovery_dialog = dlg
+        dlg.show()
+
+    def _close_discovery_dialog(self) -> None:
+        dlg = self._discovery_dialog
+        if dlg is None:
+            return
+        self._discovery_dialog = None
+        try:
+            dlg.canceled.disconnect(self._on_discovery_cancelled)
+        except (TypeError, RuntimeError):
+            pass
+        dlg.reset()
+        dlg.deleteLater()
+
+    def _on_discovery_cancelled(self) -> None:
+        self._close_discovery_dialog()
+        self.status_label.setText("Discovery cancelled.")
+        self.diagnostics_tab.log_event("DISCOVERY cancelled by user")
+        self._stop_workers()
+        self.disconnected.emit()
 
     def _start_monitor(self) -> None:
         if self._plc is None:
@@ -2456,6 +2506,7 @@ class WorkspaceView(QWidget):
                 errors.append(f"{fmt}: {e}")
 
     def _stop_discovery_worker(self, wait_ms: int = 10000) -> None:
+        self._close_discovery_dialog()
         worker = self._discovery_worker
         if worker is None:
             return

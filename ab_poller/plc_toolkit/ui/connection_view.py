@@ -356,6 +356,13 @@ class ConnectionView(QWidget):
         dlg.exec()
 
     def _on_new_connection_accepted(self, plc: PlcConnection) -> None:
+        # If the device was already identified as unsupported during the
+        # dialog's connection test, do not save it at all.
+        if plc.product_name and not is_tag_readable_controller(
+            plc.product_name, plc.vendor,
+        ):
+            self._unsupported_device_dialog(plc)
+            return
         try:
             self.db.upsert_plc(plc)
         except Exception as e:
@@ -367,6 +374,11 @@ class ConnectionView(QWidget):
         self.refresh()
         label = plc.display_label()
         self.status_label.setText(f"Saved '{label}' ({plc.ip}).")
+        # "Save & connect": actually connect now. If the device turns out
+        # to be unsupported (e.g. a MicroLogix entered without testing),
+        # the workspace discovery will detect it and remove it from the
+        # saved list, so only connectable devices remain.
+        self.plc_selected.emit(plc)
 
     def _on_remove(self) -> None:
         plc = self.selected_plc()

@@ -18,6 +18,117 @@ The project has two parallel surfaces:
 
 ---
 
+## 2026-06-29 — Diagnostics: show Vendor and Serial (no longer "?")
+
+### Fixed (`ui/workspace_view.py`)
+- The Diagnostics **Connection summary** showed `Vendor: ?` and
+  `Serial: ?` for every PLC. The summary was populated at connect time,
+  *before* `get_device_info()` ran, and vendor/serial aren't stored in the
+  saved-connection row — so they stayed blank. The summary is now
+  refreshed after discovery completes with the live device info, so Vendor
+  and Serial populate from the actual `GetDeviceProperties` response.
+- Not hardcoded: pylogix maps the device's VendorID to a name (Rockwell
+  Automation / Allen-Bradley for AB controllers), so other vendors will
+  display their own name. Serial shows the controller's hex serial.
+- Rebuilt `PLC_Toolkit.exe` and `dist_package/PLC_Toolkit.zip`.
+
+---
+
+## 2026-06-29 — Settings: stop wheel-scroll edits; add Restore to defaults
+
+### Fixed (`ui/settings_dialog.py`)
+- **Scroll wheel no longer changes a hovered combo/spin box.** Scrolling
+  the Settings page while the cursor was over a dropdown or number field
+  silently changed its value. Combo boxes and spin boxes now use
+  no-scroll variants (`NoScrollComboBox`/`NoScrollSpinBox`/
+  `NoScrollDoubleSpinBox`) that ignore the wheel unless the control is
+  focused (clicked/tabbed into); otherwise the wheel scrolls the page.
+  Focus policy changed to `StrongFocus` so hovering can't grab the wheel.
+
+### Added (`ui/settings_dialog.py`)
+- **Restore to defaults** button (bottom-left of the Settings dialog).
+  Resets every field on the page to its default value (paths revert to
+  app defaults; current theme preserved) after a confirmation; nothing is
+  written until OK. Refactored settings load into `_apply_to_widgets()`
+  so it serves both initial load and the restore action.
+- Rebuilt `PLC_Toolkit.exe` and `dist_package/PLC_Toolkit.zip`.
+
+---
+
+## 2026-06-29 — Branded splash text + visible discovery progress dialog
+
+### Changed (`splash.py`, `build_windows.py`)
+- The bootloader splash now shows **PLC Toolkit** and **Created by Scott
+  Adams** baked into the image (matching the runtime Qt splash, so there's
+  no late text "pop-in"). The PNG is rendered at build time under the real
+  Windows Qt platform so fonts are available (the offscreen platform has
+  none, which caused the earlier tofu boxes). The bootloader keeps its
+  bottom-left progress overlay (the module/file names being unpacked) as a
+  subtle "it's loading" indicator, restyled small and muted.
+
+### Added (`workspace_view.py`)
+- **Discovery progress dialog.** Tag discovery can take 20–30s+, and the
+  only feedback was a small banner. There is now a modal busy dialog
+  ("Discovering tags") with an indeterminate progress bar that updates
+  with the live status ("Connecting…", "Querying tag list…") and a
+  **Cancel** button that stops discovery and returns to the Connection
+  Manager. (pylogix's GetTagList is a single blocking call with no
+  per-tag callback, so the bar is indeterminate rather than a percentage.)
+- Rebuilt `PLC_Toolkit.exe` and `dist_package/PLC_Toolkit.zip`.
+
+---
+
+## 2026-06-29 — Saved list only keeps connectable devices; longer discovery timeout
+
+### Fixed (`connection_view.py`, `workspace_view.py`)
+- **An unsupported device (e.g. MicroLogix) was left in Saved connections**
+  after the "not supported" warning. Now:
+  - `ConnectionView._on_new_connection_accepted` skips saving outright when
+    the dialog test already identified an unsupported device, and otherwise
+    makes "Save && connect" actually connect.
+  - `WorkspaceView._on_discovery_unsupported` now **removes** the device
+    from the saved list (was: persisted it). So a MicroLogix added without
+    testing is auto-removed the moment discovery identifies it. Only
+    devices we can browse remain in the list.
+
+### Changed (`workers/__init__.py`)
+- **Discovery timeout floor raised to 30 s.** `DiscoveryWorker` used the
+  5 s connection-timeout setting for the whole tag enumeration, so a
+  slow/radio-linked PLC (e.g. 10.59.3.85) timed out with
+  `Unknown error ... timed out`. Tag discovery now uses
+  `max(connection_timeout, 30 s)`; the quick connection test in the New
+  Connection dialog still uses the short timeout. (A persistent timeout
+  still means the PLC isn't answering within 30 s — check reachability,
+  slot, and firewall.)
+- Rebuilt `PLC_Toolkit.exe` and `dist_package/PLC_Toolkit.zip`.
+
+### Note — test-suite teardown
+- All tests pass (164 passed, 4 skipped). On this Windows + PySide6 setup
+  the pytest process can segfault during interpreter shutdown *after* the
+  run completes (a known Qt teardown quirk); it does not affect the built
+  exe or any test result.
+
+---
+
+## 2026-06-29 — Fix stuck bootloader splash + tofu boxes
+
+### Fixed (`plc_toolkit/app.py`, `plc_toolkit/splash.py`, `build_windows.py`)
+- **Splash stayed on top forever** (couldn't move/close, even with the
+  main window open). A PyInstaller onefile bootloader splash must be
+  dismissed by the app via `pyi_splash.close()`; we never called it, so it
+  persisted for the whole session. `app.main()` now closes it during
+  startup (guarded import; no-op outside the frozen build).
+- **Tofu boxes in the splash image.** `splash.png` is rendered at build
+  time under the headless 'offscreen' Qt platform, which has no fonts, so
+  the baked "PLC Toolkit"/"Loading" text became boxes. `splash_pixmap()`
+  gained a `with_text` flag; the bootloader PNG is now **logo-only**
+  (no text to tofu), while the runtime Qt splash (Windows, fonts present)
+  keeps the text. Bootloader overlay text changed to plain ASCII
+  ("Loading PLC Toolkit"; the unicode ellipsis is gone).
+- Rebuilt `PLC_Toolkit.exe` and `dist_package/PLC_Toolkit.zip`.
+
+---
+
 ## 2026-06-29 — Close the unsupported-device loophole on direct connect
 
 ### Changed (`workers`, `workspace_view.py`, `device_filter.py`)

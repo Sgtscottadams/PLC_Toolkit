@@ -53,11 +53,16 @@ class DiscoveryWorker(QThread):
     def stop(self) -> None:
         self._cancelled = True
 
+    # Tag enumeration over a slow / radio-linked PLC can take far longer
+    # than a quick connection test, so discovery uses a generous floor.
+    _DISCOVERY_TIMEOUT_FLOOR_S = 30.0
+
     def run(self) -> None:
         if self._cancelled:
             return
         self.signals.started.emit()
-        client = PLCClient(self.plc, timeout_s=self.timeout_s)
+        timeout = max(self.timeout_s, self._DISCOVERY_TIMEOUT_FLOOR_S)
+        client = PLCClient(self.plc, timeout_s=timeout)
         try:
             self.signals.progress.emit(f"Connecting to {client.plc.ip}…")
             client.get_device_info()

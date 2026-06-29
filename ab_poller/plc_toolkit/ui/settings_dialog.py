@@ -6,7 +6,7 @@ from dataclasses import asdict
 
 from pathlib import Path
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QPushButton,
     QScrollArea,
     QSpinBox,
@@ -28,6 +29,40 @@ from PySide6.QtWidgets import (
 
 from plc_toolkit import style as app_style
 from plc_toolkit.settings_store import AppSettings, app_data_dir, portable_mode
+
+
+class _NoScrollMixin:
+    """Ignore wheel events unless the control is focused.
+
+    On a scrollable settings page, hovering the mouse over a combo box or
+    spin box and scrolling would silently change its value. With this
+    mixin the wheel only adjusts the value after the control is focused
+    (clicked/tabbed into); otherwise the wheel scrolls the page.
+    """
+
+    def wheelEvent(self, event):  # noqa: N802 (Qt naming)
+        if self.hasFocus():
+            super().wheelEvent(event)
+        else:
+            event.ignore()
+
+
+class NoScrollComboBox(_NoScrollMixin, QComboBox):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.setFocusPolicy(Qt.StrongFocus)
+
+
+class NoScrollSpinBox(_NoScrollMixin, QSpinBox):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.setFocusPolicy(Qt.StrongFocus)
+
+
+class NoScrollDoubleSpinBox(_NoScrollMixin, QDoubleSpinBox):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.setFocusPolicy(Qt.StrongFocus)
 
 
 class SettingsDialog(QDialog):
@@ -61,26 +96,35 @@ class SettingsDialog(QDialog):
         buttons.accepted.connect(self._on_accept)
         buttons.rejected.connect(self.reject)
 
+        self.restore_btn = QPushButton("Restore to defaults")
+        self.restore_btn.setObjectName("restoreDefaultsBtn")
+        self.restore_btn.clicked.connect(self._on_restore_defaults)
+
+        button_row = QHBoxLayout()
+        button_row.addWidget(self.restore_btn)
+        button_row.addStretch()
+        button_row.addWidget(buttons)
+
         outer = QVBoxLayout(self)
         outer.addWidget(scroll)
-        outer.addWidget(buttons)
+        outer.addLayout(button_row)
 
-        self._load_from_settings()
+        self._apply_to_widgets(self._settings)
 
     def _build_connection_group(self) -> QGroupBox:
         g = QGroupBox("Connection")
         form = QFormLayout(g)
 
-        self.timeout_spin = QDoubleSpinBox()
+        self.timeout_spin = NoScrollDoubleSpinBox()
         self.timeout_spin.setRange(1, 60)
         self.timeout_spin.setSuffix(" s")
         form.addRow("Default connection timeout", self.timeout_spin)
 
-        self.retries_spin = QSpinBox()
+        self.retries_spin = NoScrollSpinBox()
         self.retries_spin.setRange(0, 10)
         form.addRow("Connect retries", self.retries_spin)
 
-        self.retry_delay_spin = QSpinBox()
+        self.retry_delay_spin = NoScrollSpinBox()
         self.retry_delay_spin.setRange(0, 10000)
         self.retry_delay_spin.setSingleStep(100)
         self.retry_delay_spin.setSuffix(" ms")
@@ -89,7 +133,7 @@ class SettingsDialog(QDialog):
         self.auto_reconnect_cb = QCheckBox("Auto-reconnect on dropped session")
         form.addRow(self.auto_reconnect_cb)
 
-        self.port_spin = QSpinBox()
+        self.port_spin = NoScrollSpinBox()
         self.port_spin.setRange(1, 65535)
         form.addRow("Default port", self.port_spin)
 
@@ -103,7 +147,7 @@ class SettingsDialog(QDialog):
         self.disc_network.setPlaceholderText("(auto from interface)")
         form.addRow("Default network", self.disc_network)
 
-        self.disc_cidr = QComboBox()
+        self.disc_cidr = NoScrollComboBox()
         for c in ("/16", "/20", "/24", "/25", "/26", "/27", "/28"):
             self.disc_cidr.addItem(c)
         form.addRow("Default CIDR", self.disc_cidr)
@@ -114,7 +158,7 @@ class SettingsDialog(QDialog):
         g = QGroupBox("Polling & display")
         form = QFormLayout(g)
 
-        self.poll_combo = QComboBox()
+        self.poll_combo = NoScrollComboBox()
         for label in ("5 s", "15 s", "30 s", "1 min", "5 min"):
             self.poll_combo.addItem(label)
         form.addRow("Default poll rate", self.poll_combo)
@@ -124,11 +168,11 @@ class SettingsDialog(QDialog):
         sym.setEnabled(False)
         form.addRow(sym)
 
-        self.bool_combo = QComboBox()
+        self.bool_combo = NoScrollComboBox()
         self.bool_combo.addItems(["0 / 1", "FALSE / TRUE", "Off / On"])
         form.addRow("BOOL display", self.bool_combo)
 
-        self.trend_spin = QSpinBox()
+        self.trend_spin = NoScrollSpinBox()
         self.trend_spin.setRange(10, 8640)
         self.trend_spin.setToolTip(
             "Samples kept per tag on the Monitor tab (sparkline + export). "
@@ -158,7 +202,7 @@ class SettingsDialog(QDialog):
         scans_row.addWidget(scans_browse)
         form.addRow("Scan archives", scans_row)
 
-        self.retention_spin = QSpinBox()
+        self.retention_spin = NoScrollSpinBox()
         self.retention_spin.setRange(1, 3650)
         form.addRow("Retain history (days)", self.retention_spin)
 
@@ -209,8 +253,20 @@ class SettingsDialog(QDialog):
         if path:
             target.setText(path)
 
-    def _load_from_settings(self) -> None:
-        s = self._settings
+    def _on_restore_defaults(self) -> None:
+        confirm = QMessageBox.question(
+            self, "Restore defaults?",
+            "Reset all settings on this page to their default values?\n\n"
+            "Storage and export paths revert to the app defaults too. "
+            "Nothing is saved until you click OK.",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
+        )
+        if confirm != QMessageBox.Yes:
+            return
+        # Keep the current theme; reset everything else to dataclass defaults.
+        self._apply_to_widgets(AppSettings(theme=self._settings.theme))
+
+    def _apply_to_widgets(self, s: AppSettings) -> None:
         self.timeout_spin.setValue(s.connection_timeout_s)
         self.retries_spin.setValue(s.connect_retries)
         self.retry_delay_spin.setValue(s.retry_delay_ms)
