@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>01 — Connection Manager</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="theme-dark">
+<div class="page">
+
+  <!-- Crumb / status -->
+  <div class="crumbs">
+    Launch &rarr; Connection Manager
+    <span class="badge">0 clicks from launch</span>
+  </div>
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="brand">
+        <img src="assets/clr-logo.png" alt="Continental Resources">
+        <span>PLC Toolkit</span>
+      </span>
+    </div>
+    <div class="actions">
+      <div class="theme-toggle" role="group" aria-label="Theme">
+        <button type="button" id="theme-light">Light</button>
+        <button type="button" id="theme-dark" class="is-active">Dark</button>
+      </div>
+      <a class="icon-btn" href="09-settings.html" title="Settings">⚙ Settings</a>
+      <a class="icon-btn" href="10-help.html" title="Help">? Help</a>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="section-title">Saved connections</div>
+  <div class="panel">
+    <div class="panel-header">
+      <span>Saved connections <span class="hint">(4)</span></span>
+      <span class="panel-header-actions">
+        <a class="btn secondary" href="03-discover-plcs.html" title="Find PLCs on the network">Discover on subnet</a>
+        <a class="btn-primary-large" href="02-new-connection.html">
+          <span class="glyph" aria-hidden="true">+</span>
+          <span>Connect to a new PLC</span>
+        </a>
+      </span>
+    </div>
+    <div class="panel-body tight">
+      <ul class="conn-list">
+        <li>
+          <input type="checkbox" aria-label="Select Compressor Skid A">
+          <span class="col-name"><b>Compressor Skid A</b></span>
+          <span class="col-ip">10.20.30.41</span>
+          <span class="col-slot">slot 0</span>
+          <span class="col-when">last seen 0h ago</span>
+          <span class="col-act"><a class="btn primary" href="04-workspace-browse.html">Connect</a></span>
+        </li>
+        <li>
+          <input type="checkbox" aria-label="Select Compressor Skid B">
+          <span class="col-name"><b>Compressor Skid B</b></span>
+          <span class="col-ip">10.20.30.42</span>
+          <span class="col-slot">slot 0</span>
+          <span class="col-when">last seen 2h ago</span>
+          <span class="col-act"><a class="btn primary" href="04-workspace-browse.html">Connect</a></span>
+        </li>
+        <li>
+          <input type="checkbox" aria-label="Select Tank Farm PLC">
+          <span class="col-name"><b>Tank Farm PLC</b></span>
+          <span class="col-ip">10.20.31.10</span>
+          <span class="col-slot">slot 2</span>
+          <span class="col-when">last seen 1d ago</span>
+          <span class="col-act"><a class="btn primary" href="04-workspace-browse.html">Connect</a></span>
+        </li>
+        <li>
+          <input type="checkbox" aria-label="Select LACT Unit 3">
+          <span class="col-name"><b>LACT Unit 3</b></span>
+          <span class="col-ip">10.20.32.5</span>
+          <span class="col-slot">slot 0</span>
+          <span class="col-when">last seen 5d ago</span>
+          <span class="col-act"><a class="btn primary" href="04-workspace-browse.html">Connect</a></span>
+        </li>
+      </ul>
+    </div>
+    <div class="panel-body">
+      <div class="btn-row muted" aria-label="Selection actions">
+        <button type="button">Remove selected</button>
+        <button type="button">Rename selected</button>
+        <span class="hint" style="margin-left:auto;">0 selected</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- [DRAFT: question for user] -->
+  <div class="draft-note">
+    [DRAFT: question for user] When the saved list is empty, do we want a full-panel empty state
+    ("No saved connections. Click 'Connect to a new PLC' or 'Discover on subnet' to get started."),
+    or a slightly different copy? The current empty-state copy in the spec says only "placeholder empty
+    state" so I'm assuming a one-liner inside the panel.
+  </div>
+
+  <!-- Empty-state alternative (collapsed; uncomment to preview) -->
+  <!--
+  <div class="panel">
+    <div class="panel-header">Saved connections <span class="hint">(0)</span></div>
+    <div class="empty">
+      No saved connections yet. Click <b>+ Connect to a new PLC</b> or
+      <b>Discover on subnet</b> to get started.
+    </div>
+  </div>
+  -->
+
+  <!-- Status bar -->
+  <div class="statusbar">
+    <span>Status: Not connected.</span>
+    <span class="hint">Ready.</span>
+  </div>
+
+</div>
+<script>
+  // Theme toggle: swap body.theme-dark <-> no class, update button state.
+  (function () {
+    var b = document.body;
+    var l = document.getElementById('theme-light');
+    var d = document.getElementById('theme-dark');
+    if (!l || !d) return;
+    function apply(theme) {
+      if (theme === 'dark') b.classList.add('theme-dark');
+      else b.classList.remove('theme-dark');
+      l.classList.toggle('is-active', theme === 'light');
+      d.classList.toggle('is-active', theme === 'dark');
+      try { localStorage.setItem('plc-theme', theme); } catch (e) {}
+    }
+    // Restore prior choice if any; otherwise default to the body class set in markup.
+    var saved = null;
+    try { saved = localStorage.getItem('plc-theme'); } catch (e) {}
+    if (saved === 'light' || saved === 'dark') apply(saved);
+    else apply(b.classList.contains('theme-dark') ? 'dark' : 'light');
+    l.addEventListener('click', function () { apply('light'); });
+    d.addEventListener('click', function () { apply('dark'); });
+  })();
+</script>
+</body>
+</html>

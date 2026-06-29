@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>08 — Workspace: Diagnostics</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="theme-dark">
+<div class="page">
+
+  <div class="crumbs">
+    Connection Manager &rarr; Compressor Skid A &rarr; <b>Diagnostics</b>
+    <span class="badge">2 clicks from launch</span>
+  </div>
+
+  <div class="topbar">
+        <div class="topbar-left">
+      <a class="back-link" href="01-connection-manager.html" title="Back to Connections (keeps the PLC connection alive)">
+        <span class="arrow" aria-hidden="true">&#8592;</span><span>Connections</span>
+      </a>
+    </div>
+<div class="title">
+      Workspace — Compressor Skid A <span class="hint">(10.20.30.41, slot 0)</span>
+    </div>
+    <div class="actions">
+      <div class="theme-toggle" role="group" aria-label="Theme">
+        <button type="button" id="theme-light">Light</button>
+        <button type="button" id="theme-dark">Dark</button>
+      </div>
+
+      <a class="btn" href="01-connection-manager.html">Disconnect</a>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <a class="tab" href="04-workspace-browse.html">Browse</a>
+    <a class="tab" href="05-workspace-monitor.html">Monitor</a>
+    <a class="tab" href="06-workspace-export.html">Export</a>
+    <a class="tab" href="07-workspace-history.html">History</a>
+    <a class="tab active" href="08-workspace-diagnostics.html">Diagnostics*</a>
+  </div>
+
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 0;">
+
+    <!-- Left column: connection summary + bandwidth -->
+    <div>
+
+      <div class="section-title">Connection summary</div>
+      <div class="section">
+        <dl class="kv">
+          <dt>PLC name</dt>          <dd>Compressor Skid A</dd>
+          <dt>IP address</dt>        <dd>10.20.30.41</dd>
+          <dt>Processor slot</dt>    <dd>0</dd>
+          <dt>CIP path</dt>          <dd>(default)</dd>
+          <dt>Driver</dt>            <dd>pycomm3.LogixDriver</dd>
+          <dt>Driver version</dt>    <dd>pycomm3 1.2.10</dd>
+          <dt>Connected at</dt>      <dd>2026-06-16 10:10:33</dd>
+          <dt>Connected for</dt>     <dd>4m 32s</dd>
+          <dt>Round-trip latency</dt><dd>4.1 ms (avg) / 11 ms (max)</dd>
+          <dt>Errors this session</dt><dd>0</dd>
+          <dt>PLC identity</dt>      <dd>1756-L82E / v32.011</dd>
+        </dl>
+      </div>
+
+      <div class="section-title">Bandwidth</div>
+      <div class="section">
+        <dl class="kv">
+          <dt>Reads / sec</dt>     <dd>14 (target: 10)</dd>
+          <dt>Writes / sec</dt>     <dd>0</dd>
+          <dt>Bytes in (session)</dt> <dd>1,842,113</dd>
+          <dt>Bytes out (session)</dt><dd>224,580</dd>
+          <dt>CIP errors</dt>       <dd>0</dd>
+          <dt>Retries</dt>          <dd>0</dd>
+          <dt>Connection drops</dt> <dd>0</dd>
+        </dl>
+      </div>
+
+    </div>
+
+    <!-- Right column: activity log -->
+    <div>
+
+      <div class="section-title">Recent activity log</div>
+      <div class="section" style="padding: 0;">
+        <table class="grid log-table" style="width:100%;">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Action</th>
+              <th>Duration</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="ts">10:14:55.120</td>
+              <td class="action">read Pump_01.Speed</td>
+              <td class="dur">3.8 ms</td>
+              <td class="result ok">OK</td>
+            </tr>
+            <tr>
+              <td class="ts">10:14:55.123</td>
+              <td class="action">read Pump_01.Status</td>
+              <td class="dur">2.1 ms</td>
+              <td class="result ok">OK</td>
+            </tr>
+            <tr>
+              <td class="ts">10:14:55.126</td>
+              <td class="action">read Tank.Level</td>
+              <td class="dur">2.4 ms</td>
+              <td class="result ok">OK</td>
+            </tr>
+            <tr>
+              <td class="ts">10:14:54.001</td>
+              <td class="action">discover_tags() (142 tags)</td>
+              <td class="dur">3.4 s</td>
+              <td class="result ok">OK</td>
+            </tr>
+            <tr>
+              <td class="ts">10:10:33.488</td>
+              <td class="action">open_connection()</td>
+              <td class="dur">412 ms</td>
+              <td class="result ok">OK</td>
+            </tr>
+            <tr>
+              <td class="ts">10:10:33.090</td>
+              <td class="action">get_plc_info()</td>
+              <td class="dur">86 ms</td>
+              <td class="result err">ERROR</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="btn-row" style="margin: 12px;">
+    <button class="primary">Re-test connection</button>
+    <button>Copy diagnostics to clipboard</button>
+    <button>Clear log</button>
+    <span class="hint" style="margin-left:auto;">Showing 6 of 6 events. Log retained for 24h.</span>
+  </div>
+
+  <div class="draft-note">
+    [DRAFT: question for user] "Copy diagnostics to clipboard" — should the payload be
+    (a) plain text (key-value pairs),
+    (b) a JSON blob, or
+    (c) the same set with formatting (markdown)?
+    My default is (a) plain text because technicians paste it into ticket systems.
+  </div>
+
+  <div class="statusbar">
+    <span>Connected 4m 32s &nbsp;|&nbsp; 14 reads/sec &nbsp;|&nbsp; 0 errors</span>
+    <span class="hint">Log path: %APPDATA%\PLCToolkit\logs\session_2026-06-16_10-10-33.log</span>
+  </div>
+
+</div>
+<script>
+  // Shared theme controller. Reads localStorage.plc-theme and applies the body class.
+  // Wired to .theme-toggle buttons if present. Defaults to dark.
+  (function () {
+    var b = document.body;
+    function apply(theme) {
+      if (theme === 'dark') b.classList.add('theme-dark');
+      else b.classList.remove('theme-dark');
+      var l = document.getElementById('theme-light');
+      var d = document.getElementById('theme-dark');
+      if (l) l.classList.toggle('is-active', theme === 'light');
+      if (d) d.classList.toggle('is-active', theme === 'dark');
+      try { localStorage.setItem('plc-theme', theme); } catch (e) {}
+    }
+    var saved = null;
+    try { saved = localStorage.getItem('plc-theme'); } catch (e) {}
+    if (saved !== 'light' && saved !== 'dark') saved = 'dark';
+    apply(saved);
+    var l = document.getElementById('theme-light');
+    var d = document.getElementById('theme-dark');
+    if (l) l.addEventListener('click', function () { apply('light'); });
+    if (d) d.addEventListener('click', function () { apply('dark'); });
+  })();
+</script>
+</body>
+</html>

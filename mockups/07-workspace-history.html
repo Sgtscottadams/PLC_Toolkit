@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>07 — Workspace: History</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="theme-dark">
+<div class="page">
+
+  <div class="crumbs">
+    Connection Manager &rarr; Compressor Skid A &rarr; <b>History</b>
+    <span class="badge">2 clicks from launch</span>
+  </div>
+
+  <div class="topbar">
+        <div class="topbar-left">
+      <a class="back-link" href="01-connection-manager.html" title="Back to Connections (keeps the PLC connection alive)">
+        <span class="arrow" aria-hidden="true">&#8592;</span><span>Connections</span>
+      </a>
+    </div>
+<div class="title">
+      Workspace — Compressor Skid A <span class="hint">(10.20.30.41, slot 0)</span>
+    </div>
+    <div class="actions">
+      <div class="theme-toggle" role="group" aria-label="Theme">
+        <button type="button" id="theme-light">Light</button>
+        <button type="button" id="theme-dark">Dark</button>
+      </div>
+
+      <a class="btn" href="01-connection-manager.html">Disconnect</a>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <a class="tab" href="04-workspace-browse.html">Browse</a>
+    <a class="tab" href="05-workspace-monitor.html">Monitor</a>
+    <a class="tab" href="06-workspace-export.html">Export</a>
+    <a class="tab active" href="07-workspace-history.html">History<span class="badge-new">NEW</span></a>
+    <a class="tab" href="08-workspace-diagnostics.html">Diagnostics</a>
+  </div>
+
+  <div class="section-title">Past scans for "Compressor Skid A"</div>
+
+  <table class="grid" style="margin: 0 12px; width: calc(100% - 24px);">
+    <thead>
+      <tr>
+        <th style="width:24px;"><input type="checkbox"></th>
+        <th>Scan #</th>
+        <th>Started at</th>
+        <th>Duration</th>
+        <th>Tags</th>
+        <th>Delta vs. previous</th>
+        <th>Size on disk</th>
+        <th>Source</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><input type="checkbox"></td>
+        <td>0042</td>
+        <td>2026-06-15 14:22:07</td>
+        <td>3.4 s</td>
+        <td>148</td>
+        <td>+2 added <span class="hint">(Pump_03.*)</span></td>
+        <td>1.1 MB</td>
+        <td>Re-discover</td>
+        <td>
+          <button>View</button>
+          <button>Export</button>
+          <button>Delete</button>
+        </td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" checked></td>
+        <td>0041</td>
+        <td>2026-06-14 09:11:55</td>
+        <td>3.1 s</td>
+        <td>146</td>
+        <td>— <span class="hint">(no change)</span></td>
+        <td>1.0 MB</td>
+        <td>Scheduled</td>
+        <td>
+          <button>View</button>
+          <button>Export</button>
+          <button>Delete</button>
+        </td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" checked></td>
+        <td>0040</td>
+        <td>2026-06-12 17:48:02</td>
+        <td>2.9 s</td>
+        <td>146</td>
+        <td>+1 added <span class="hint">(Compressor.Run)</span></td>
+        <td>0.9 MB</td>
+        <td>Manual</td>
+        <td>
+          <button>View</button>
+          <button>Export</button>
+          <button>Delete</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="btn-row" style="margin: 8px 12px;">
+    <span class="hint">2 of 42 selected</span>
+    <button class="primary">Compare selected scans<span class="badge-new">NEW</span></button>
+    <span style="margin-left:auto;"></span>
+    <button>Refresh</button>
+  </div>
+
+  <div class="draft-note">
+    [DRAFT: question for user] "Compare selected scans" — should the result be:
+    (a) a side-by-side value diff for matching tag paths (last value from each),
+    (b) a structural diff of added/removed/renamed tags only, or
+    (c) both, on separate tabs? Spec says "Compare selected scans" without further detail.
+  </div>
+
+  <div class="draft-note">
+    [DRAFT: question for user] The .badge-new "NEW" pill on the History tab and on the
+    "Compare selected scans" button is reserved for v2.0 features. Remove the pill once
+    a feature is no longer "new" (typically 1–2 minor releases after GA). v2.1 candidates
+    that should also get a NEW pill: anything in the History tab not in v1.x.
+  </div>
+
+  <div class="draft-note">
+    [DRAFT: question for user] Spec mentions 3 rows; we have many more in reality. Should the
+    History tab be paginated (e.g. 25 per page) or virtual-scrolled? Drawn as a single table for
+    the wireframe.
+  </div>
+
+  <div class="statusbar">
+    <span>Connected 4m 32s &nbsp;|&nbsp; 14 reads/sec &nbsp;|&nbsp; 0 errors</span>
+    <span class="hint">History: 42 scans stored locally (this PLC)</span>
+  </div>
+
+</div>
+<script>
+  // Shared theme controller. Reads localStorage.plc-theme and applies the body class.
+  // Wired to .theme-toggle buttons if present. Defaults to dark.
+  (function () {
+    var b = document.body;
+    function apply(theme) {
+      if (theme === 'dark') b.classList.add('theme-dark');
+      else b.classList.remove('theme-dark');
+      var l = document.getElementById('theme-light');
+      var d = document.getElementById('theme-dark');
+      if (l) l.classList.toggle('is-active', theme === 'light');
+      if (d) d.classList.toggle('is-active', theme === 'dark');
+      try { localStorage.setItem('plc-theme', theme); } catch (e) {}
+    }
+    var saved = null;
+    try { saved = localStorage.getItem('plc-theme'); } catch (e) {}
+    if (saved !== 'light' && saved !== 'dark') saved = 'dark';
+    apply(saved);
+    var l = document.getElementById('theme-light');
+    var d = document.getElementById('theme-dark');
+    if (l) l.addEventListener('click', function () { apply('light'); });
+    if (d) d.addEventListener('click', function () { apply('dark'); });
+  })();
+</script>
+</body>
+</html>

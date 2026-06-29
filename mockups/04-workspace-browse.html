@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>04 — Workspace: Browse</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="theme-dark">
+<div class="page">
+
+  <div class="crumbs">
+    Connection Manager &rarr; Compressor Skid A &rarr; <b>Browse</b>
+    <span class="badge">1 click from launch</span>
+  </div>
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <a class="back-link" href="01-connection-manager.html" title="Back to Connections (keeps the PLC connection alive)">
+        <span class="arrow" aria-hidden="true">&#8592;</span><span>Connections</span>
+      </a>
+    </div>
+    <div class="title">
+      Workspace &mdash; Compressor Skid A <span class="hint">(10.20.30.41, slot 0)</span>
+    </div>
+    <div class="actions">
+      <div class="theme-toggle" role="group" aria-label="Theme">
+        <button type="button" id="theme-light">Light</button>
+        <button type="button" id="theme-dark">Dark</button>
+      </div>
+      <a class="btn" href="01-connection-manager.html">Disconnect</a>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <a class="tab active" href="04-workspace-browse.html">Browse*</a>
+    <a class="tab" href="05-workspace-monitor.html">Monitor</a>
+    <a class="tab" href="06-workspace-export.html">Export</a>
+    <a class="tab" href="07-workspace-history.html">History</a>
+    <a class="tab" href="08-workspace-diagnostics.html">Diagnostics</a>
+  </div>
+
+  <!-- Search row -->
+  <div class="searchbar">
+    <span>Search:</span>
+    <input type="text" placeholder="filter tags… (e.g. Pump_01, Level, Status)">
+    <span class="count">142 tags discovered</span>
+    <button>Re-discover</button>
+  </div>
+
+  <!-- Split main area -->
+  <div class="split">
+
+    <!-- LEFT: tag tree -->
+    <div class="pane">
+      <div class="tree-hint">
+        Click any row to inspect that tag's value, type, and a 60-sample trend.
+        Click <code>[+]</code> to add it to the Monitor watch list.
+        Right-click for more options.
+      </div>
+      <ul class="tagtree">
+        <li class="is-udt">
+          <span class="twisty open"></span>
+          <span class="tag-udt">Pump_01</span><span class="type">UDT: PUMP_DATA (8 members)</span>
+          <span class="row-actions"><a class="row-action" href="#" title="Add Pump_01 (8 leaf tags) to monitor">+8</a></span>
+          <ul>
+            <li class="is-leaf" data-tag="Pump_01.Status" data-type="BOOL">
+              <span class="twisty leaf"></span><span class="tag-leaf">Pump_01.Status</span><span class="type">BOOL</span>
+              <span class="row-actions"><a class="row-action" href="#" title="Add Pump_01.Status to monitor">+</a></span></li>
+            <li class="is-leaf is-selected" data-tag="Pump_01.Speed" data-type="REAL" tabindex="0">
+              <span class="twisty leaf"></span><span class="tag-leaf">Pump_01.Speed</span><span class="type">REAL</span>
+              <span class="row-actions"><a class="row-action" href="#" title="Add Pump_01.Speed to monitor">+</a></span></li>
+            <li class="is-leaf" data-tag="Pump_01.Runtime" data-type="DINT">
+              <span class="twisty leaf"></span><span class="tag-leaf">Pump_01.Runtime</span><span class="type">DINT</span>
+              <span class="row-actions"><a class="row-action" href="#" title="Add Pump_01.Runtime to monitor">+</a></span></li>
+            <li>
+              <span class="twisty open"></span>
+              <span class="tag-udt">Pump_01.Alarms</span><span class="type">UDT: ALARM_BITS</span>
+              <span class="row-actions"><a class="row-action" href="#" title="Add Pump_01.Alarms to monitor">+</a></span>
+              <ul>
+                <li class="is-leaf" data-tag="Pump_01.Alarms.HighTemp" data-type="BOOL">
+                  <span class="twisty leaf"></span><span class="tag-leaf">Pump_01.Alarms.HighTemp</span><span class="type">BOOL</span>
+                  <span class="row-actions"><a class="row-action" href="#" title="Add to monitor">+</a></span></li>
+                <li class="is-leaf" data-tag="Pump_01.Alarms.LowFlow" data-type="BOOL">
+                  <span class="twisty leaf"></span><span class="tag-leaf">Pump_01.Alarms.LowFlow</span><span class="type">BOOL</span>
+                  <span class="row-actions"><a class="row-action" href="#" title="Add to monitor">+</a></span></li>
+                <li class="is-leaf" data-tag="Pump_01.Alarms.Vibration" data-type="BOOL">
+                  <span class="twisty leaf"></span><span class="tag-leaf">Pump_01.Alarms.Vibration</span><span class="type">BOOL</span>
+                  <span class="row-actions"><a class="row-action" href="#" title="Add to monitor">+</a></span></li>
+              </ul>
+            </li>
+            <li class="is-leaf is-cmd" data-tag="Pump_01.StartCmd" data-type="BOOL" data-access="write">
+              <span class="twisty leaf"></span><span class="tag-leaf">Pump_01.StartCmd</span>
+              <span class="type">BOOL <span class="pill-write" title="Write tag — not supported in v2.0 (read-only)">cmd</span></span>
+              <span class="row-actions"><a class="row-action disabled" href="#" title="Write tags are not supported in v2.0">+</a></span></li>
+            <li class="is-leaf is-cmd" data-tag="Pump_01.StopCmd" data-type="BOOL" data-access="write">
+              <span class="twisty leaf"></span><span class="tag-leaf">Pump_01.StopCmd</span>
+              <span class="type">BOOL <span class="pill-write" title="Write tag — not supported in v2.0 (read-only)">cmd</span></span>
+              <span class="row-actions"><a class="row-action disabled" href="#" title="Write tags are not supported in v2.0">+</a></span></li>
+          </ul>
+        </li>
+        <li>
+          <span class="twisty open"></span>
+          <span class="tag-udt">Pump_02</span><span class="type">UDT: PUMP_DATA (8 members)</span>
+          <span class="row-actions"><a class="row-action" href="#" title="Add Pump_02 to monitor">+8</a></span>
+          <ul>
+            <li class="is-leaf" data-tag="Pump_02.Status" data-type="BOOL">
+              <span class="twisty leaf"></span><span class="tag-leaf">Pump_02.Status</span><span class="type">BOOL</span>
+              <span class="row-actions"><a class="row-action" href="#" title="Add to monitor">+</a></span></li>
+            <li class="is-leaf" data-tag="Pump_02.Speed" data-type="REAL">
+              <span class="twisty leaf"></span><span class="tag-leaf">Pump_02.Speed</span><span class="type">REAL</span>
+              <span class="row-actions"><a class="row-action" href="#" title="Add to monitor">+</a></span></li>
+            <li class="is-leaf" data-tag="Pump_02.Runtime" data-type="DINT">
+              <span class="twisty leaf"></span><span class="tag-leaf">Pump_02.Runtime</span><span class="type">DINT</span>
+              <span class="row-actions"><a class="row-action" href="#" title="Add to monitor">+</a></span></li>
+          </ul>
+        </li>
+        <li>
+          <span class="twisty open"></span>
+          <span class="tag-udt">Tank</span><span class="type">UDT: TANK_DATA</span>
+          <span class="row-actions"><a class="row-action" href="#" title="Add Tank to monitor">+3</a></span>
+          <ul>
+            <li class="is-leaf" data-tag="Tank.Level" data-type="REAL">
+              <span class="twisty leaf"></span><span class="tag-leaf">Tank.Level</span><span class="type">REAL</span>
+              <span class="row-actions"><a class="row-action" href="#" title="Add to monitor">+</a></span></li>
+            <li class="is-leaf" data-tag="Tank.Temp" data-type="REAL">
+              <span class="twisty leaf"></span><span class="tag-leaf">Tank.Temp</span><span class="type">REAL</span>
+              <span class="row-actions"><a class="row-action" href="#" title="Add to monitor">+</a></span></li>
+            <li class="is-leaf" data-tag="Tank.Pressure" data-type="REAL">
+              <span class="twisty leaf"></span><span class="tag-leaf">Tank.Pressure</span><span class="type">REAL</span>
+              <span class="row-actions"><a class="row-action" href="#" title="Add to monitor">+</a></span></li>
+          </ul>
+        </li>
+        <li>
+          <span class="twisty closed"></span>
+          <span class="tag-udt">Compressor</span><span class="type">UDT: COMPRESSOR_DATA</span>
+          <span class="row-actions"><a class="row-action" href="#" title="Add Compressor to monitor">+3</a></span>
+        </li>
+        <li>
+          <span class="twisty closed"></span>
+          <span class="tag-udt">IO</span><span class="type">…</span>
+          <span class="row-actions"><a class="row-action" href="#" title="Add IO to monitor">+</a></span>
+        </li>
+        <li>
+          <span class="twisty closed"></span>
+          <span class="tag-udt">System</span><span class="type">…</span>
+          <span class="row-actions"><a class="row-action" href="#" title="Add System to monitor">+</a></span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- RIGHT: tag inspector (active when a tag is selected on the left) -->
+    <div class="pane inspector" id="inspector-pane">
+
+      <div class="inspector-head">
+        <div class="inspector-title">
+          <code class="inspector-tag">Pump_01.Speed</code>
+          <span class="type">REAL</span>
+        </div>
+        <div class="inspector-meta">
+          <span class="quality-dot ok" title="Good — PLC responded with valid data on last read"></span>
+          <span class="quality-text">Good</span>
+          <span class="hint">&middot;</span>
+          <span class="hint">Last read 2s ago</span>
+        </div>
+      </div>
+
+      <div class="inspector-value">
+        <span class="value-num">1,847.3</span><span class="value-unit"> RPM</span>
+      </div>
+      <div class="inspector-minmax">
+        min <b>1,802.1</b> &nbsp;&middot;&nbsp;
+        max <b>1,891.7</b> &nbsp;&middot;&nbsp;
+        avg <b>1,847.9</b>
+        <span class="hint">&nbsp;(last 60 reads &middot; 2 min @ 2s inspector poll)</span>
+      </div>
+
+      <div class="inspector-spark">
+        <!-- 60-sample sparkline; bars reflect the 1,802-1,892 RPM range, 5s live.
+             Uses theme-aware color via fill="currentColor" so it re-tints on toggle. -->
+        <svg viewBox="0 0 300 60" width="100%" height="60" preserveAspectRatio="none"
+             style="color: var(--color-fg); display:block;">
+          <g fill="currentColor" opacity="0.85">
+            <!-- 60 bars: 4px wide, 1px gap; heights map 1,802-1,892 RPM to 6-54px. -->
+            <!-- Generated: a smooth noise around 1,847. Drawn statically here. -->
+            <rect x="0"   y="28" width="4" height="28"/><rect x="5"   y="26" width="4" height="30"/><rect x="10"  y="29" width="4" height="27"/><rect x="15"  y="31" width="4" height="25"/><rect x="20"  y="27" width="4" height="29"/><rect x="25"  y="24" width="4" height="32"/><rect x="30"  y="22" width="4" height="34"/><rect x="35"  y="25" width="4" height="31"/><rect x="40"  y="28" width="4" height="28"/><rect x="45"  y="30" width="4" height="26"/>
+            <rect x="50"  y="32" width="4" height="24"/><rect x="55"  y="29" width="4" height="27"/><rect x="60"  y="26" width="4" height="30"/><rect x="65"  y="23" width="4" height="33"/><rect x="70"  y="20" width="4" height="36"/><rect x="75"  y="22" width="4" height="34"/><rect x="80"  y="25" width="4" height="31"/><rect x="85"  y="28" width="4" height="28"/><rect x="90"  y="30" width="4" height="26"/><rect x="95"  y="27" width="4" height="29"/>
+            <rect x="100" y="24" width="4" height="32"/><rect x="105" y="21" width="4" height="35"/><rect x="110" y="19" width="4" height="37"/><rect x="115" y="22" width="4" height="34"/><rect x="120" y="26" width="4" height="30"/><rect x="125" y="29" width="4" height="27"/><rect x="130" y="31" width="4" height="25"/><rect x="135" y="28" width="4" height="28"/><rect x="140" y="25" width="4" height="31"/><rect x="145" y="22" width="4" height="34"/>
+            <rect x="150" y="20" width="4" height="36"/><rect x="155" y="23" width="4" height="33"/><rect x="160" y="26" width="4" height="30"/><rect x="165" y="29" width="4" height="27"/><rect x="170" y="32" width="4" height="24"/><rect x="175" y="30" width="4" height="26"/><rect x="180" y="27" width="4" height="29"/><rect x="185" y="24" width="4" height="32"/><rect x="190" y="21" width="4" height="35"/><rect x="195" y="23" width="4" height="33"/>
+            <rect x="200" y="26" width="4" height="30"/><rect x="205" y="29" width="4" height="27"/><rect x="210" y="32" width="4" height="24"/><rect x="215" y="30" width="4" height="26"/><rect x="220" y="27" width="4" height="29"/><rect x="225" y="24" width="4" height="32"/><rect x="230" y="22" width="4" height="34"/><rect x="235" y="25" width="4" height="31"/><rect x="240" y="28" width="4" height="28"/><rect x="245" y="31" width="4" height="25"/>
+            <rect x="250" y="29" width="4" height="27"/><rect x="255" y="26" width="4" height="30"/><rect x="260" y="23" width="4" height="33"/><rect x="265" y="20" width="4" height="36"/><rect x="270" y="22" width="4" height="34"/><rect x="275" y="25" width="4" height="31"/><rect x="280" y="28" width="4" height="28"/><rect x="285" y="30" width="4" height="26"/><rect x="290" y="27" width="4" height="29"/><rect x="295" y="24" width="4" height="32"/>
+          </g>
+          <!-- baseline at value=0 not drawn; this is a bar chart, not a waveform -->
+        </svg>
+      </div>
+
+      <div class="inspector-actions">
+        <a class="btn primary" href="05-workspace-monitor.html" title="Open the Monitor tab and add this tag to the watch list">
+          + Add to Monitor
+        </a>
+        <a class="btn secondary" href="08-workspace-diagnostics.html" title="View read history for this tag in Diagnostics">
+          Read history
+        </a>
+        <button class="btn secondary" title="Copy the bare tag path to the clipboard">
+          Copy tag path
+        </button>
+      </div>
+
+      <div class="inspector-note">
+        <b>Inspector</b> reads this tag every 2s on demand. It does not count against
+        the Monitor watch list poll cycle. Switch to the <a href="05-workspace-monitor.html">Monitor tab</a>
+        to watch multiple tags live with sparklines + quality indicators side by side.
+      </div>
+    </div>
+  </div>
+
+  <!-- Status bar -->
+  <div class="statusbar">
+    <span>Connected 4m 32s &nbsp;|&nbsp; 14 reads/sec &nbsp;|&nbsp; 0 errors</span>
+    <span class="hint">Driver: pycomm3.LogixDriver</span>
+  </div>
+
+</div>
+<script>
+  // Shared theme controller. Reads localStorage.plc-theme and applies the body class.
+  // Wired to .theme-toggle buttons if present. Defaults to dark.
+  (function () {
+    var b = document.body;
+    function apply(theme) {
+      if (theme === 'dark') b.classList.add('theme-dark');
+      else b.classList.remove('theme-dark');
+      var l = document.getElementById('theme-light');
+      var d = document.getElementById('theme-dark');
+      if (l) l.classList.toggle('is-active', theme === 'light');
+      if (d) d.classList.toggle('is-active', theme === 'dark');
+      try { localStorage.setItem('plc-theme', theme); } catch (e) {}
+    }
+    var saved = null;
+    try { saved = localStorage.getItem('plc-theme'); } catch (e) {}
+    if (saved !== 'light' && saved !== 'dark') saved = 'dark';
+    apply(saved);
+    var l = document.getElementById('theme-light');
+    var d = document.getElementById('theme-dark');
+    if (l) l.addEventListener('click', function () { apply('light'); });
+    if (d) d.addEventListener('click', function () { apply('dark'); });
+  })();
+
+  // ---------- Tag inspector ----------
+  // Click a row in the tree to populate the right-pane inspector with that
+  // tag's data. The inspector reads the selected tag every 2s on demand
+  // (mocked here as a static "1,847.3" value); in the real app it would be
+  // a single explicit read followed by 2s refreshes until a different row
+  // is selected. Switches are visual-only in the wireframe.
+  (function () {
+    var leaves = document.querySelectorAll('.tagtree li.is-leaf');
+    var inspector = document.getElementById('inspector-pane');
+    if (!inspector || !leaves.length) return;
+
+    // Hard-coded sample values per tag, so reviewers can see the inspector
+    // populated for several different tag types. In the real app, these
+    // come from pylogix reads.
+    var samples = {
+      'Pump_01.Status':          { value: '1',            unit: '',  kind: 'bool-true',  type: 'BOOL' },
+      'Pump_01.Speed':           { value: '1,847.3',      unit: ' RPM', kind: 'num',     type: 'REAL' },
+      'Pump_01.Runtime':         { value: '142,318',      unit: ' hr',  kind: 'num',     type: 'DINT' },
+      'Pump_01.Alarms.HighTemp': { value: '0',            unit: '',  kind: 'bool-false', type: 'BOOL' },
+      'Pump_01.Alarms.LowFlow':  { value: '0',            unit: '',  kind: 'bool-false', type: 'BOOL' },
+      'Pump_01.Alarms.Vibration':{ value: '0',            unit: '',  kind: 'bool-false', type: 'BOOL' },
+      'Pump_01.StartCmd':        { value: '0',            unit: '',  kind: 'bool-false', type: 'BOOL', write: true },
+      'Pump_01.StopCmd':         { value: '0',            unit: '',  kind: 'bool-false', type: 'BOOL', write: true },
+      'Pump_02.Status':          { value: '1',            unit: '',  kind: 'bool-true',  type: 'BOOL' },
+      'Pump_02.Speed':           { value: '0.0',          unit: ' RPM', kind: 'num',     type: 'REAL' },
+      'Pump_02.Runtime':         { value: '98,221',       unit: ' hr',  kind: 'num',     type: 'DINT' },
+      'Tank.Level':              { value: '14.7',         unit: ' ft',  kind: 'num',     type: 'REAL' },
+      'Tank.Temp':               { value: '142.8',        unit: ' \u00B0F', kind: 'num', type: 'REAL' },
+      'Tank.Pressure':           { value: '38.2',         unit: ' psi', kind: 'num',     type: 'REAL' },
+    };
+
+    function buildSparkBars(seed) {
+      // Deterministic pseudo-random heights around 24-32 (out of 60). The
+      // sparkline SVG is already in the markup for the initial selection;
+      // this regenerates the <rect>s when a different tag is picked.
+      var h = 0;
+      for (var i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) & 0x7fffffff;
+      var bars = '';
+      for (var i = 0; i < 60; i++) {
+        h = (h * 1103515245 + 12345) & 0x7fffffff;
+        var height = 18 + (h % 22);
+        var y = 54 - height;
+        var x = i * 5;
+        bars += '<rect x="' + x + '" y="' + y + '" width="4" height="' + height + '"/>';
+      }
+      return bars;
+    }
+
+    function selectTag(li) {
+      // Update selected state in the tree.
+      leaves.forEach(function (n) { n.classList.remove('is-selected'); });
+      li.classList.add('is-selected');
+
+      var tag = li.getAttribute('data-tag');
+      var type = li.getAttribute('data-type') || '';
+      var s = samples[tag] || { value: '\u2014', unit: '', kind: 'num', type: type };
+
+      // For write tags, the inspector is read-only in v2.0: show the current
+      // value but disable the "Add to Monitor" button. (Operator cannot write.)
+      var isWrite = li.classList.contains('is-cmd');
+
+      // Build the inspector contents.
+      var valueClass = 'value-num ' + s.kind;
+      var monitorHref = isWrite
+        ? '" title="Write tags cannot be added to the Monitor watch list in v2.0" disabled'
+        : '" href="05-workspace-monitor.html"';
+
+      inspector.innerHTML =
+        '<div class="inspector-head">' +
+          '<div class="inspector-title">' +
+            '<code class="inspector-tag">' + tag + '</code>' +
+            '<span class="type">' + (s.type || type) + '</span>' +
+          '</div>' +
+          '<div class="inspector-meta">' +
+            '<span class="quality-dot ok" title="Good \u2014 PLC responded with valid data on last read"></span>' +
+            '<span class="quality-text">Good</span>' +
+            '<span class="hint">&middot;</span>' +
+            '<span class="hint">Last read 2s ago</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="inspector-value">' +
+          '<span class="' + valueClass + '">' + s.value + '</span>' +
+          '<span class="value-unit">' + s.unit + '</span>' +
+        '</div>' +
+        '<div class="inspector-minmax">' +
+          'min <b>1,802.1</b> &nbsp;&middot;&nbsp; ' +
+          'max <b>1,891.7</b> &nbsp;&middot;&nbsp; ' +
+          'avg <b>1,847.9</b>' +
+          '<span class="hint">&nbsp;(last 60 reads &middot; 2 min @ 2s inspector poll)</span>' +
+        '</div>' +
+        '<div class="inspector-spark">' +
+          '<svg viewBox="0 0 300 60" width="100%" height="60" preserveAspectRatio="none" ' +
+               'style="color: var(--color-fg); display:block;">' +
+            '<g fill="currentColor" opacity="0.85">' + buildSparkBars(tag) + '</g>' +
+          '</svg>' +
+        '</div>' +
+        '<div class="inspector-actions">' +
+          '<a class="btn primary" href=' + monitorHref + '>' +
+            (isWrite ? '+ Add to Monitor (disabled for write tags)' : '+ Add to Monitor') +
+          '</a>' +
+          '<a class="btn secondary" href="08-workspace-diagnostics.html" ' +
+             'title="View read history for this tag in Diagnostics">Read history</a>' +
+          '<button class="btn secondary" title="Copy the bare tag path to the clipboard">Copy tag path</button>' +
+        '</div>' +
+        '<div class="inspector-note">' +
+          '<b>Inspector</b> reads this tag every 2s on demand. It does not count against ' +
+          'the Monitor watch list poll cycle. Switch to the ' +
+          '<a href="05-workspace-monitor.html">Monitor tab</a> to watch multiple tags live ' +
+          'with sparklines + quality indicators side by side.' +
+        '</div>';
+    }
+
+    leaves.forEach(function (li) {
+      li.addEventListener('click', function (e) {
+        // Don't switch selection when the user clicked the [+] action.
+        if (e.target.closest('.row-action')) return;
+        selectTag(li);
+      });
+      li.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          selectTag(li);
+        }
+      });
+    });
+  })();
+</script>
+</body>
+</html>

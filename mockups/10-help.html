@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>10 — Help (placeholder)</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="theme-dark">
+<div class="page">
+
+  <div class="crumbs">
+    Connection Manager &rarr; <b>Help</b>
+    <span class="badge">1 click from launch</span>
+  </div>
+
+  <div class="topbar">
+    <div class="title">PLC Toolkit</div>
+    <div class="actions">
+      <div class="theme-toggle" role="group" aria-label="Theme">
+        <button type="button" id="theme-light">Light</button>
+        <button type="button" id="theme-dark">Dark</button>
+      </div>
+
+      <a class="icon-btn" href="09-settings.html">⚙ Settings</a>
+      <a class="icon-btn" href="10-help.html">? Help</a>
+    </div>
+  </div>
+
+  <div class="panel" style="margin: 48px auto; max-width: 720px;">
+    <div class="panel-header">Help</div>
+    <div class="panel-body">
+      <h2 style="margin-top: 0;">Not yet implemented — flagged for v2.1</h2>
+      <p>
+        The in-app help system is intentionally not built for v1. This screen is a placeholder so
+        the <code>? Help</code> icon in the top bar has somewhere to go without throwing an error.
+      </p>
+      <p>For the v1 release, the README in the install directory will cover:</p>
+      <ul>
+        <li>Adding a PLC by IP</li>
+        <li>Subnet discovery</li>
+        <li>Browsing, monitoring, and exporting tags</li>
+        <li>Reading the activity log and diagnostics</li>
+      </ul>
+      <p>
+        <a class="btn" href="01-connection-manager.html">&larr; Back to Connection Manager</a>
+      </p>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span>Status: Not connected.</span>
+    <span class="hint">Help is a stub.</span>
+  </div>
+
+</div>
+<script>
+  // Shared theme controller. Reads localStorage.plc-theme and applies the body class.
+  // Wired to .theme-toggle buttons if present. Defaults to dark.
+  (function () {
+    var b = document.body;
+    function apply(theme) {
+      if (theme === 'dark') b.classList.add('theme-dark');
+      else b.classList.remove('theme-dark');
+      var l = document.getElementById('theme-light');
+      var d = document.getElementById('theme-dark');
+      if (l) l.classList.toggle('is-active', theme === 'light');
+      if (d) d.classList.toggle('is-active', theme === 'dark');
+      try { localStorage.setItem('plc-theme', theme); } catch (e) {}
+    }
+    var saved = null;
+    try { saved = localStorage.getItem('plc-theme'); } catch (e) {}
+    if (saved !== 'light' && saved !== 'dark') saved = 'dark';
+    apply(saved);
+    var l = document.getElementById('theme-light');
+    var d = document.getElementById('theme-dark');
+    if (l) l.addEventListener('click', function () { apply('light'); });
+    if (d) d.addEventListener('click', function () { apply('dark'); });
+  })();
+</script>
+</body>
+</html>

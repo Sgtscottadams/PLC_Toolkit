@@ -1,0 +1,10 @@
+PySide6==6.11.1
+pylogix==1.1.5
+openpyxl==3.1.5
+pytest==9.1.0
+tzdata>=2024.1
+
+# Legacy TUI theme: soft import in plc_toolkit_consolidated.py, so the
+# TUI runs without it (theme falls back to no-color). Required for the
+# test env so test_tui_theme.py's TTY-color assertions are verifiable.
+colorama==0.4.6

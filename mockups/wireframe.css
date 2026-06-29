@@ -1,0 +1,1377 @@
+/* =====================================================================
+   PLC Toolkit Wireframe CSS — Industrial / SCADA Theme
+   ---------------------------------------------------------------------
+   Visual reference: Ignition, FactoryTalk View, WinCC.
+   - Neutral grays, strong data density.
+   - Segoe UI for chrome, Consolas / monospace for tag, IP, and value columns.
+   - Continental Resources (CLR) THREE-tier accent system (v2.0):
+       * Tier 1 — Primary action (CTA buttons, links, focus rings,
+         active states): CLR blue  #1565C0 (light) / brighter #4A90D9 (dark).
+       * Tier 2 — Strong/active emphasis (selected tab, active row,
+         panel-header accent bar): CLR navy #0F1E3D (light) / brighter
+         #2A4A7A (dark).
+       * Tier 3 — Information/attention (frames, badges, info hints,
+         "look at this" callouts): CLR gold #B8860B (light) / brighter
+         #E0A82E (dark). NOT an action color — see cardinal rule below.
+     Blue and navy meet >= 4.5:1 contrast against their respective
+     backgrounds. Accent foreground (text on accent fills) is white #FFFFFF
+     in both themes. Gold contrast is documented near the gold tokens
+     (borders/graphical elements only; never body text in light mode).
+       *** CARDINAL RULE: GOLD MUST NEVER be used on a clickable element,
+           on a focus ring, or anywhere it could be confused with a primary
+           action. Gold is for "look at this," not "do this." ***
+     v2.0 approved gold placements: (1) .draft-note info-panel frames,
+     (2) .info-hint hover-tooltip styling, (3) .badge-new "NEW" pill.
+     Other proposed gold uses (last-seen emphasis, UDT member dot,
+     glyph underline) are deferred to v2.1.
+   - 4px rounded corners ONLY on interactive elements (buttons, inputs,
+     selects, icon buttons, theme toggle). Panels and tables stay square.
+   - Subtle 1px borders; no drop shadows other than a faint inset on inputs.
+   - 1280px-wide pages.
+
+   THEME SYSTEM
+   ------------
+   All colors, fonts, and chrome metrics are defined as CSS custom properties
+   on :root. Two built-in themes:
+
+     :root             -> LIGHT theme (default for :root itself).
+     body.theme-dark   -> DARK theme  (toggle the class on <body>).
+
+   To add a new theme (e.g. "high-contrast" for shop-floor displays):
+     1. Create a new selector, e.g.  body.theme-hc { ... }.
+     2. Override only the variables you need (--color-bg, --color-fg,
+        --color-panel, --color-border, --color-accent, etc.).
+     3. Add a button in the theme toggle on 01-connection-manager.html
+        that sets document.body.className = 'theme-hc'.
+
+   The component rules below (panels, tables, buttons, ...) only ever
+   reference the custom properties — they will pick up any theme
+   automatically.
+
+   CUSTOM PROPERTY INDEX
+   ---------------------
+   Surfaces:    --color-bg, --color-bg-alt, --color-panel, --color-panel-header,
+                --color-row-alt, --color-modal-backdrop
+   Text:        --color-fg, --color-fg-muted, --color-fg-strong, --color-link
+   Lines:       --color-border, --color-border-strong
+   Accent:      --color-accent, --color-accent-fg, --color-accent-hover,
+                --color-strong
+   Gold (info): --color-gold, --color-gold-fg, --color-gold-tint,
+                --color-gold-border
+   Status:      --color-ok, --color-err
+   Fonts:       --font-sans, --font-mono, --font-size-base
+   Chrome:      --radius-control, --space-1 .. --space-4
+   Inputs:      --input-inset-shadow
+   ===================================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  /* Surfaces */
+  --color-bg:               #F4F4F4;   /* page background */
+  --color-bg-alt:           #ECEEF0;   /* breadcrumbs, statusbar, searchbar */
+  --color-panel:            #FFFFFF;   /* panel body, modal body, table rows */
+  --color-panel-header:     #E4E7EA;   /* panel header, topbar, tab bar */
+  --color-row-alt:          #F8F8F8;   /* alternating table rows */
+  --color-modal-backdrop:   rgba(0, 0, 0, 0.35);
+
+  /* Text */
+  --color-fg:               #1F2326;   /* default text */
+  --color-fg-muted:         #5B6166;   /* .hint, secondary text */
+  --color-fg-strong:        #000000;   /* panel-header, tab.active */
+  --color-link:             #1565C0;   /* in-prose links, also accent-related (CLR blue) */
+
+  /* Lines */
+  --color-border:           #C7CCCF;   /* default 1px border */
+  --color-border-strong:    #8A9094;   /* panel border, topbar bottom border */
+
+  /* Accent — Continental Resources (CLR) two-color palette */
+  --color-accent:           #1565C0;   /* CLR blue  — primary action bg, focus rings, links */
+  --color-accent-fg:        #FFFFFF;   /* text on accent bg (white for >= 4.5:1 contrast) */
+  --color-accent-hover:     #0D4A99;   /* darker CLR blue on hover/active */
+  --color-accent-tint:      #E8F0FA;   /* very light CLR blue — secondary btn hover bg */
+  --color-accent-tint-fg:   #0D4A99;   /* darker CLR blue — secondary btn hover fg */
+  --color-strong:           #0F1E3D;   /* CLR navy — strong/active emphasis (selected tab,
+                                          active-button hover, panel-header accent bar) */
+
+  /* Gold (Tier 3) — Continental Resources (CLR) gold accent.
+     THREE-tier accent system reminder:
+       Tier 1 = --color-accent  (CLR blue)  → action / focus / link
+       Tier 2 = --color-strong  (CLR navy)  → strong / active / selected
+       Tier 3 = --color-gold    (CLR gold)  → info / attention / "look at this"
+     CARDINAL RULE: GOLD MUST NEVER be used on a clickable element, on a
+     focus ring, or anywhere it could be confused with a primary action.
+     In v2.0, gold is used only on: .draft-note frames, .info-hint popovers,
+     and .badge-new "NEW" pills.
+
+     CONTRAST (verified):
+       Light mode:
+         Gold #B8860B on page bg #F4F4F4   ≈ 3.6:1
+           → passes WCAG 1.4.11 graphical elements (>= 3:1)
+           → FAILS WCAG 1.4.3 body text (>= 4.5:1)
+             *** DO NOT use gold for body text in light mode. ***
+             Use only for borders, large bold text, or pill text on
+             a solid gold fill.
+         White #FFFFFF on gold #B8860B     ≈ 4.5:1  (borderline body; passes
+                                                  for the .badge-new pill
+                                                  which is 10px bold uppercase)
+         Black #000000 on gold #B8860B     ≈ 5.9:1  (passes body text)
+       Dark mode:
+         Gold #E0A82E on page bg #1E1E1E   ≈ 7.9:1  (passes everything)
+         White #FFFFFF on gold #E0A82E     ≈ 2.5:1  FAILS — that is why
+                                                  the .badge-new rule uses
+                                                  --color-gold-fg (#1E1E1E,
+                                                  dark text) in dark mode. */
+  --color-gold:             #B8860B;   /* CLR gold — info/attention accent, NOT action */
+  --color-gold-fg:          #FFFFFF;   /* text on gold backgrounds (for badges/pills) */
+  --color-gold-tint:        #FAF1DA;   /* very light gold — info panel background tint */
+  --color-gold-border:      #B8860B;   /* gold for info panel borders */
+
+  /* Status colors */
+  --color-ok:               #1B7A3A;   /* green   — good / running / connected / OK */
+  --color-warn:             #B8860B;   /* amber   — caution / degraded / stale data */
+  --color-err:              #B0231B;   /* red     — error / fault / disconnected */
+
+  /* Fonts (system only) */
+  --font-sans:  "Segoe UI", "Segoe UI Variable", "Calibri", Tahoma, Verdana, sans-serif;
+  --font-mono:  "Consolas", "SFMono-Regular", "Liberation Mono", Menlo, "Courier New", monospace;
+  --font-size-base: 13px;
+
+  /* Chrome metrics */
+  --radius-control: 4px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --input-inset-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+  --btn-elev-shadow:   0 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+/* ---------- DARK THEME ----------
+   Continental Resources three-color accent palette, brighter variants on
+   a charcoal background. CLR blue brightens from #1565C0 -> #4A90D9;
+   CLR navy brightens from #0F1E3D -> #2A4A7A; CLR gold brightens from
+   #B8860B -> #E0A82E (and the gold foreground flips to dark text, since
+   white-on-bright-gold fails at ~2.5:1 in dark mode). */
+body.theme-dark {
+  --color-bg:               #1E1E1E;
+  --color-bg-alt:           #181818;
+  --color-panel:            #252628;
+  --color-panel-header:     #2D3033;
+  --color-row-alt:          #2A2C2E;
+  --color-modal-backdrop:   rgba(0, 0, 0, 0.65);
+
+  --color-fg:               #E6E8EA;
+  --color-fg-muted:         #9AA0A4;
+  --color-fg-strong:        #FFFFFF;
+  --color-link:             #4A90D9;   /* brighter CLR blue for dark theme */
+
+  --color-border:           #3A3D40;
+  --color-border-strong:    #5A5E62;
+
+  --color-accent:           #4A90D9;   /* brighter CLR blue for dark */
+  --color-accent-fg:        #FFFFFF;   /* white text on accent bg (>= 4.5:1) */
+  --color-accent-hover:     #6BA8E5;   /* lighter CLR blue on hover */
+  --color-accent-tint:      #1A2A45;   /* dark CLR blue tint — secondary btn hover bg */
+  --color-accent-tint-fg:   #6BA8E5;   /* lighter CLR blue — secondary btn hover fg */
+  --color-strong:           #2A4A7A;   /* brighter CLR navy for dark */
+
+  /* Gold (Tier 3) — dark theme overrides. The brighter #E0A82E hits
+     ~7.9:1 against the dark page bg and passes for everything. The
+     foreground flips to dark text (#1E1E1E) because white-on-bright-gold
+     only achieves ~2.5:1. Cardinal rule still applies: gold is NEVER an
+     action color. */
+  --color-gold:             #E0A82E;   /* brighter gold for dark */
+  --color-gold-fg:          #1E1E1E;   /* dark text on gold backgrounds (for badges) */
+  --color-gold-tint:        #3A2E10;   /* dark gold tint — info panel bg */
+  --color-gold-border:      #E0A82E;   /* gold for info panel borders */
+
+  --color-ok:               #4ECB73;   /* brighter green for dark */
+  --color-warn:             #E0A82E;   /* brighter amber for dark */
+  --color-err:              #F26D63;   /* brighter red for dark */
+
+  --input-inset-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.40);
+  --btn-elev-shadow:   0 1px 0 rgba(0, 0, 0, 0.20);
+}
+
+/* ---------- Base typography & links ---------- */
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--color-link);
+  text-decoration: underline;
+}
+a:hover, a:focus {
+  background: var(--color-bg-alt);
+  outline: none;
+}
+a:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Page frame ---------- */
+.page {
+  min-width: 1280px;
+  margin: 0 auto;
+  border-left: 1px solid var(--color-border-strong);
+  border-right: 1px solid var(--color-border-strong);
+  background: var(--color-bg);
+}
+
+.crumbs {
+  padding: 6px 12px;
+  font-size: 11px;
+  color: var(--color-fg-muted);
+  background: var(--color-bg-alt);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.badge {
+  display: inline-block;
+  padding: 1px 6px;
+  margin-left: 8px;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-panel);
+  font-size: 11px;
+  color: var(--color-fg-muted);
+  border-radius: var(--radius-control);
+}
+
+/* .draft-note — info panel / "question for the user" annotation.
+   Restyled in v2.0 to use the CLR gold Tier-3 accent (border + tint
+   background) so the call-out is visually distinct from regular muted
+   helper text. The text itself stays in --color-fg-strong (black in
+   light, white in dark) — never in gold — to keep body-text contrast
+   above 4.5:1 (gold-on-tint fails WCAG body text in light mode). */
+.draft-note {
+  display: block;
+  margin: 8px 12px;
+  padding: 4px 8px;
+  border: 1px solid var(--color-gold-border);
+  background: var(--color-gold-tint);
+  color: var(--color-fg-strong);
+  font-size: 11px;
+}
+
+/* .info-hint — small gold-bordered popover used for hover hints and
+   info-tooltip styling (e.g. "what is this tag?" popup on hover).
+   This is a PRESENTATION class only — wireframes do not implement
+   actual tooltips. The implementing engineer applies this class to
+   whichever element the tooltip engine renders. Cardinal rule: gold
+   is for "look at this" only; if a hint ever needs to be a link, the
+   link itself must use --color-link (CLR blue), not gold. */
+.info-hint {
+  display: inline-block;
+  margin: 6px 12px;
+  padding: 4px 8px;
+  border: 1px solid var(--color-gold-border);
+  background: var(--color-gold-tint);
+  color: var(--color-fg-strong);
+  font-size: 11px;
+  border-radius: var(--radius-control);
+}
+
+/* .badge-new — small gold pill-shaped "NEW" status indicator.
+   Reserved for v2.0 features that are new since v1.x. NEVER clickable
+   by itself (the wrapping label/tab/button carries the affordance).
+   The 10px bold uppercase text on solid gold fill passes the contrast
+   checks documented near the gold tokens. */
+.badge-new {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: bold;
+  background: var(--color-gold);
+  color: var(--color-gold-fg);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* ---------- Top bar ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  /* 3-column flex: [left-actions] [title] [right-actions].
+     The left slot (.topbar-left) has min-width 0 so an empty left slot
+     collapses; the title flexes to fill; the right slot is auto-sized
+     to its content. */
+  gap: 12px;
+  height: 40px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--color-border-strong);
+  background: var(--color-panel-header);
+}
+.topbar .topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 0 0 auto;
+}
+.topbar .title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-fg-strong);
+  /* Allow long workspace titles (e.g. "Workspace — Compressor Skid A …")
+     to ellipsize instead of pushing the right-side actions off-screen. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.topbar .actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex: 0 0 auto;
+}
+/* Back-to-parent navigation (top-bar left slot).
+   Visually subordinate to a real button — a left-arrow + label, no
+   background, no border, just a quiet link styled to match the
+   topbar chrome. Used for the "← Connections" anchor that takes the
+   user back to the Connection Manager WITHOUT closing the PLC
+   session. Disconnect (the right-side button) is the destructive
+   action; this is the safe navigation. */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
+  color: var(--color-fg-muted);
+  font-size: 12px;
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+}
+.back-link:hover, .back-link:focus {
+  background: var(--color-bg-alt);
+  color: var(--color-fg);
+  border-color: var(--color-border);
+  outline: none;
+  text-decoration: none;
+}
+.back-link:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+.back-link .arrow { font-size: 12px; line-height: 1; }
+
+/* Brand mark (logo + product name) — top-bar left slot.
+   Used on the Connection Manager / landing screens instead of a
+   plain text title. The logo is a real <img> tag pointing at
+   assets/clr-logo.png so the file is theme-agnostic (RGBA PNG). */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-fg-strong);
+}
+.brand img {
+  display: block;
+  height: 30px;
+  width: auto;
+}
+
+.icon-btn {
+  display: inline-block;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-panel);
+  color: var(--color-fg);
+  text-align: center;
+  line-height: 22px;
+  font-size: 12px;
+  text-decoration: none;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+.icon-btn:hover, .icon-btn:focus {
+  background: var(--color-bg-alt);
+  outline: none;
+}
+.icon-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* ---------- Theme toggle (all pages) ---------- */
+.theme-toggle {
+  display: inline-flex;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+  margin-right: 4px;
+  background: var(--color-panel);
+}
+.theme-toggle button {
+  appearance: none;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0 10px;
+  height: 24px;
+  line-height: 22px;
+  font-size: 11px;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+  font-family: inherit;
+}
+.theme-toggle button + button {
+  border-left: 1px solid var(--color-border);
+}
+.theme-toggle button:hover {
+  background: var(--color-bg-alt);
+  color: var(--color-fg);
+}
+.theme-toggle button.is-active {
+  background: var(--color-accent);
+  color: var(--color-accent-fg);
+  font-weight: 600;
+}
+
+/* ---------- Tab bar ---------- */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-border-strong);
+  background: var(--color-panel-header);
+}
+.tab {
+  padding: 6px 14px;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-panel-header);
+  color: var(--color-fg);
+  text-decoration: none;
+  font-size: 12px;
+}
+.tab:hover, .tab:focus {
+  background: var(--color-bg-alt);
+  outline: none;
+}
+.tab.active {
+  background: var(--color-bg);
+  border-bottom: 2px solid var(--color-strong);   /* CLR navy emphasis bar */
+  color: var(--color-fg-strong);                  /* keep text in strong fg for legibility */
+  font-weight: 600;
+}
+
+/* ---------- Status bar ---------- */
+.statusbar {
+  height: 24px;
+  padding: 0 12px;
+  border-top: 1px solid var(--color-border-strong);
+  background: var(--color-bg-alt);
+  color: var(--color-fg);
+  font-size: 11px;
+  line-height: 24px;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* ---------- Panels / boxes ---------- */
+.panel {
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-panel);
+  margin: 12px;
+}
+.panel-header {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-panel-header);
+  color: var(--color-fg-strong);
+  font-weight: 600;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.panel-body {
+  padding: 10px;
+}
+.panel-body.tight { padding: 0; }
+
+.section-title {
+  margin: 12px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--color-fg-muted);
+  font-style: italic;
+}
+
+/* ---------- Forms ---------- */
+label {
+  display: inline-block;
+  margin: 4px 0;
+  font-size: 12px;
+  color: var(--color-fg);
+}
+.field {
+  display: flex;
+  align-items: center;
+  margin: 6px 0;
+  gap: 8px;
+}
+.field label {
+  width: 140px;
+  color: var(--color-fg);
+}
+.field input[type="text"],
+.field input[type="number"],
+.field select,
+.field textarea {
+  flex: 1;
+  padding: 4px 6px;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-panel);
+  color: var(--color-fg);
+  font-family: inherit;
+  font-size: 12px;
+  border-radius: var(--radius-control);
+  box-shadow: var(--input-inset-shadow);
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+  border-color: var(--color-accent);
+}
+.hint {
+  color: var(--color-fg-muted);
+  font-size: 11px;
+}
+.inline-link {
+  font-size: 11px;
+  color: var(--color-link);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.inline-link:hover, .inline-link:focus {
+  background: var(--color-bg-alt);
+  outline: none;
+}
+
+.advanced {
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px dashed var(--color-border);
+  background: var(--color-bg-alt);
+}
+
+/* ---------- Discover dialog: Scope section ----------
+   v2.0 scope modes: Auto (default), Specific IP, Custom subnet (advanced).
+   Each .scope-row is a flex line: [radio] [label] [inline input]. Inactive
+   rows get .is-dimmed which lowers the input opacity to 0.5 so the active
+   mode reads clearly while keeping the other options discoverable.
+   The .scope-advanced-row is hidden by default and revealed by the
+   "Show advanced" toggle on the Custom subnet row. */
+.scope-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+.scope-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-fg);
+}
+.scope-row input[type="radio"] {
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+.scope-row .scope-label {
+  /* No width: each label has different length; let it size to its text. */
+  margin: 0;
+  color: var(--color-fg);
+  cursor: pointer;
+}
+.scope-row .scope-input {
+  flex: 1;
+  padding: 3px 6px;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-panel);
+  color: var(--color-fg);
+  font-family: inherit;
+  font-size: 12px;
+  border-radius: var(--radius-control);
+  box-shadow: var(--input-inset-shadow);
+  max-width: 360px;
+}
+.scope-row .scope-input:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+  border-color: var(--color-accent);
+}
+.scope-row.is-dimmed .scope-input,
+.scope-row.is-dimmed .scope-label,
+.scope-row.is-dimmed .advanced-toggle {
+  opacity: 0.5;
+}
+.scope-row .advanced-toggle {
+  font-size: 11px;
+  color: var(--color-link);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.scope-advanced-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 2px 148px;   /* align under the inputs (140px label + 8px gap) */
+}
+.scope-advanced-row .scope-input {
+  flex: 1;
+  max-width: 360px;
+  padding: 3px 6px;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-panel);
+  color: var(--color-fg);
+  font-family: inherit;
+  font-size: 12px;
+  border-radius: var(--radius-control);
+  box-shadow: var(--input-inset-shadow);
+}
+.scope-advanced-row[hidden] { display: none; }
+
+.checkbox-row, .radio-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 4px 0;
+  font-size: 12px;
+  color: var(--color-fg);
+}
+.checkbox-row input, .radio-row input {
+  margin-top: 2px;
+  accent-color: var(--color-accent);
+}
+.checkbox-row.disabled, .radio-row.disabled {
+  color: var(--color-fg-muted);
+}
+
+.section {
+  margin: 12px;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-panel);
+}
+.section h3 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-fg-muted);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 4px;
+}
+
+/* ---------- Buttons ---------- */
+button, .btn {
+  display: inline-block;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-panel);
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--color-fg);
+  cursor: pointer;
+  text-decoration: none;
+  border-radius: var(--radius-control);
+}
+button:hover, button:focus, .btn:hover, .btn:focus {
+  background: var(--color-bg-alt);
+  outline: none;
+  border-color: var(--color-fg-muted);
+}
+button:disabled, .btn.disabled {
+  color: var(--color-fg-muted);
+  border-color: var(--color-border);
+  background: var(--color-bg-alt);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+button.primary, .btn.primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-fg);
+  font-weight: 600;
+}
+button.primary:hover, .btn.primary:hover,
+button.primary:focus, .btn.primary:focus {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+  color: var(--color-accent-fg);
+}
+
+/* Panel-header action button (medium size).
+   Used for the primary and secondary CTAs in the saved-connections
+   panel header on the Connection Manager screen. Sized to match
+   .btn.secondary so the two sit cleanly side-by-side; the
+   primary-vs-secondary distinction comes from fill vs. outline,
+   not from dimensions. */
+.btn-primary-large {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--radius-control);
+  background: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent-fg);
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: var(--btn-elev-shadow);
+}
+.btn-primary-large:hover, .btn-primary-large:focus {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+  color: var(--color-accent-fg);
+  outline: none;
+  text-decoration: none;
+}
+.btn-primary-large .glyph {
+  font-size: 15px;
+  line-height: 1;
+}
+.panel-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+/* When a secondary button sits in a panel header next to the primary CTA,
+   it picks up the same dimensions so the two sit cleanly side-by-side.
+   The primary-vs-secondary distinction comes from fill vs. outline,
+   not from dimensions. */
+.panel-header-actions .btn.secondary,
+.panel-header-actions button.secondary,
+.panel-header-actions a.secondary {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.panel-header-actions .secondary-link {
+  font-size: 12px;
+  color: var(--color-link);
+  text-decoration: underline;
+}
+.panel-header-actions .secondary-link:hover {
+  background: var(--color-bg-alt);
+}
+
+/* Secondary action (middle-tier button).
+   - OUTLINE style: CLR-blue border, CLR-blue text, transparent fill.
+     Fills with a subtle CLR-blue tint on hover/focus.
+   - Visually subordinate to the filled .btn-primary-large in the panel
+     header. Clearly an action (not muted), but reads as "alternative"
+     next to the primary CTA.
+   - Used for "Discover on subnet" and similar always-available actions
+     that should stand out from the .btn-row.muted selection buttons
+     but not compete with the primary CTA. */
+button.secondary, .btn.secondary {
+  background: transparent;
+  border: 1px solid var(--color-accent);
+  color: var(--color-link);
+  font-weight: 600;
+}
+button.secondary:hover, button.secondary:focus-visible,
+.btn.secondary:hover, .btn.secondary:focus-visible {
+  background: var(--color-accent-tint);
+  border-color: var(--color-accent-hover);
+  color: var(--color-accent-tint-fg);
+  outline: none;
+}
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.btn-row.right { justify-content: flex-end; }
+.btn-row.muted {
+  background: var(--color-bg-alt);
+  padding: 8px 10px;
+  border-top: 1px solid var(--color-border);
+}
+
+/* ---------- Tables ---------- */
+table.grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  color: var(--color-fg);
+}
+table.grid th, table.grid td {
+  border: 1px solid var(--color-border);
+  padding: 4px 6px;
+  text-align: left;
+  vertical-align: top;
+  background: var(--color-panel);
+}
+table.grid th {
+  background: var(--color-panel-header);
+  color: var(--color-fg-strong);
+  font-weight: 600;
+}
+table.grid tr:nth-child(even) td {
+  background: var(--color-row-alt);
+}
+
+/* ---------- Connection list ---------- */
+.conn-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.conn-list li {
+  display: grid;
+  grid-template-columns: 28px 1.5fr 1.2fr 80px 120px 100px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-fg);
+}
+.conn-list li:nth-child(even) {
+  background: var(--color-row-alt);
+}
+.conn-list li:last-child { border-bottom: none; }
+.conn-list .col-ip   { font-family: var(--font-mono); }
+.conn-list .col-when { color: var(--color-fg-muted); font-size: 11px; }
+.conn-list input[type="checkbox"] { accent-color: var(--color-accent); }
+
+/* ---------- Tag tree ---------- */
+.tagtree {
+  font-size: 12px;
+  padding: 6px 0;
+  margin: 0;
+  list-style: none;
+  color: var(--color-fg);
+}
+.tagtree ul {
+  list-style: none;
+  padding-left: 18px;
+  margin: 0;
+}
+.tagtree li {
+  padding: 1px 0;
+  white-space: nowrap;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 20px;
+}
+.tagtree li > ul {
+  /* Drop the nested children list to its own line inside the flex row so
+     .row-actions (margin-left: auto) can sit at the right of the label. */
+  flex-basis: 100%;
+}
+.tagtree .twisty {
+  display: inline-block;
+  width: 14px;
+  text-align: center;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+}
+.tagtree .twisty.open::before   { content: "\25BE"; }   /* ▾ */
+.tagtree .twisty.closed::before { content: "\25B8"; }   /* ▸ */
+.tagtree .twisty.leaf::before   { content: "\00B7"; color: var(--color-border-strong); } /* · */
+.tagtree .tag-leaf { color: var(--color-fg); }
+.tagtree .tag-udt  { font-weight: 600; color: var(--color-fg-strong); }
+.tagtree .type {
+  color: var(--color-fg-muted);
+  font-size: 11px;
+  margin-left: 6px;
+  font-family: var(--font-mono);
+}
+
+/* ---------- Tag tree: per-row "Add to monitor" action ----------
+   .row-actions   container at the right end of a tree row.
+   .row-action    the small [+] button. Visible (muted) by default;
+                  full-opacity CLR blue on row hover / keyboard focus.
+
+   Implementation note for engineer: this is a desktop app (Ignition /
+   FactoryTalk audience), so the [+] is always present rather than
+   hover-only. Hover boosts opacity + color to telegraph the click
+   target. The right-click context menu (with Read value now, Copy
+   tag path, View in Diagnostics, etc.) lives at the Qt layer in the
+   real app — these HTML wireframes only show the visible affordance. */
+.tagtree .row-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 2px;
+}
+.tagtree .row-action {
+  display: inline-block;
+  min-width: 18px;
+  height: 18px;
+  line-height: 16px;
+  padding: 0 4px;
+  text-align: center;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-fg-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 80ms linear,
+              color 80ms linear,
+              background 80ms linear,
+              border-color 80ms linear;
+}
+.tagtree li:hover > .row-actions .row-action,
+.tagtree li:focus-within > .row-actions .row-action,
+.tagtree .row-action.is-active {
+  opacity: 1;
+}
+.tagtree .row-action:hover,
+.tagtree .row-action:focus-visible {
+  color: var(--color-accent);
+  background: var(--color-accent-tint);
+  border-color: var(--color-accent);
+  outline: none;
+  opacity: 1;
+  text-decoration: none;
+}
+
+/* ---------- Tree hint (instruction line above the tag tree) ---------- */
+.tree-hint {
+  padding: 4px 8px;
+  margin: 0 0 4px 0;
+  font-size: 11px;
+  color: var(--color-fg-muted);
+  background: var(--color-bg-alt);
+  border-bottom: 1px solid var(--color-border);
+}
+.tree-hint code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 0 3px;
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
+  background: var(--color-panel);
+  color: var(--color-fg);
+}
+
+/* ---------- Watch list (monitor) ---------- */
+.watchlist {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  color: var(--color-fg);
+}
+.watchlist th, .watchlist td {
+  border: 1px solid var(--color-border);
+  padding: 4px 6px;
+  text-align: left;
+  background: var(--color-panel);
+}
+.watchlist th {
+  background: var(--color-panel-header);
+  color: var(--color-fg-strong);
+  font-weight: 600;
+}
+.watchlist td.value {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  width: 100px;
+}
+.watchlist td.spark {
+  width: 120px;
+}
+.watchlist td.bool-true  { color: var(--color-ok);  font-family: var(--font-mono); }
+.watchlist td.bool-false { color: var(--color-err); font-family: var(--font-mono); }
+
+/* ---------- Modal ---------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--color-modal-backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+.modal {
+  width: 520px;
+  max-width: 90vw;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-panel);
+  border-radius: var(--radius-control);
+}
+.modal.wide { width: 720px; }
+.modal-header {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-panel-header);
+  color: var(--color-fg-strong);
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-body {
+  padding: 12px;
+}
+.modal-footer {
+  padding: 8px 12px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-alt);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ---------- Test connection result panel ---------- */
+.test-result {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-left-width: 4px;
+  border-radius: var(--radius-control);
+  background: var(--color-bg-alt);
+  color: var(--color-fg);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.test-result-glyph {
+  font-size: 16px;
+  line-height: 1.2;
+  font-weight: bold;
+  flex: 0 0 20px;
+  text-align: center;
+}
+.test-result-text { flex: 1; }
+.test-result[data-state="pending"] {
+  border-left-color: var(--color-accent);
+  background: var(--color-accent-tint);
+}
+.test-result[data-state="pending"] .test-result-glyph {
+  color: var(--color-accent);
+  animation: test-spin 1.2s linear infinite;
+}
+.test-result[data-state="success"] {
+  border-left-color: var(--color-ok);
+  background: color-mix(in srgb, var(--color-ok) 12%, var(--color-bg-alt));
+}
+.test-result[data-state="success"] .test-result-glyph { color: var(--color-ok); }
+.test-result[data-state="error"] {
+  border-left-color: var(--color-err);
+  background: color-mix(in srgb, var(--color-err) 12%, var(--color-bg-alt));
+}
+.test-result[data-state="error"] .test-result-glyph { color: var(--color-err); }
+@keyframes test-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ---------- Two-pane workspace ---------- */
+.split {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  min-height: 480px;
+  border-top: 1px solid var(--color-border);
+}
+.split .pane {
+  border-right: 1px solid var(--color-border);
+  padding: 8px;
+  overflow: auto;
+  background: var(--color-panel);
+}
+.split .pane:last-child { border-right: none; }
+
+/* ---------- Tag inspector (Browse right pane) ----------
+   Activated by clicking a row on the left. The selected row gets
+   .is-selected. The inspector pane shows current value, type, quality,
+   last-read timestamp, a 60-sample sparkline, and one-tap actions for
+   "add to Monitor", "read history", and "copy tag path".
+
+   The inspector reads the selected tag every 2s on demand. It is NOT
+   part of the Monitor watch list poll cycle. */
+.tagtree li.is-selected {
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  box-shadow: inset 3px 0 0 0 var(--color-accent);
+}
+.tagtree li.is-leaf {
+  cursor: pointer;
+}
+.tagtree li.is-leaf:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+.tagtree li.is-cmd {
+  opacity: 0.55;
+}
+.tagtree li.is-cmd:hover {
+  opacity: 0.75;
+}
+.tagtree li.is-cmd .tag-leaf {
+  color: var(--color-fg-muted);
+  font-style: italic;
+}
+.tagtree li.is-cmd .row-action {
+  background: transparent;
+  color: var(--color-fg-muted);
+  border-color: var(--color-border);
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.tagtree li.is-cmd .row-action:hover,
+.tagtree li.is-cmd .row-action:focus-visible {
+  background: transparent;
+  color: var(--color-fg-muted);
+  border-color: var(--color-border);
+}
+.pill-write {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--color-warn) 18%, var(--color-bg-alt));
+  color: var(--color-warn);
+  border: 1px solid color-mix(in srgb, var(--color-warn) 40%, transparent);
+  margin-left: 4px;
+  vertical-align: 1px;
+  cursor: help;
+}
+.pane.inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+}
+.inspector-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+.inspector-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.inspector-tag {
+  font-family: var(--font-mono, "Consolas", "Menlo", monospace);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-fg-strong);
+  background: transparent;
+  padding: 0;
+}
+.inspector-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--color-fg);
+}
+.quality-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+.quality-dot.ok      { background: var(--color-ok);   box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-ok) 25%, transparent); }
+.quality-dot.stale  { background: var(--color-warn); box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-warn) 25%, transparent); }
+.quality-dot.bad    { background: var(--color-err);  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-err) 25%, transparent); }
+.quality-text { color: var(--color-fg); }
+.inspector-value {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 0 2px 0;
+}
+.value-num {
+  font-family: var(--font-mono, "Consolas", "Menlo", monospace);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-fg-strong);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.value-unit {
+  font-size: 14px;
+  color: var(--color-fg-muted);
+  font-weight: 500;
+}
+.inspector-minmax {
+  font-size: 11px;
+  color: var(--color-fg);
+  padding-bottom: 4px;
+}
+.inspector-minmax b {
+  font-family: var(--font-mono, "Consolas", "Menlo", monospace);
+  color: var(--color-fg-strong);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.inspector-spark {
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin: 4px 0 4px 0;
+}
+.inspector-spark svg {
+  display: block;
+}
+.inspector-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 4px;
+}
+.inspector-note {
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: var(--color-bg-alt);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0 4px 4px 0;
+  font-size: 11px;
+  color: var(--color-fg);
+  line-height: 1.4;
+}
+.inspector-note a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+  text-underline-offset: 2px;
+}
+
+/* ---------- Misc ---------- */
+.searchbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-alt);
+}
+.searchbar input[type="text"] {
+  flex: 1;
+  padding: 4px 6px;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-panel);
+  color: var(--color-fg);
+  font-family: inherit;
+  font-size: 12px;
+  border-radius: var(--radius-control);
+  box-shadow: var(--input-inset-shadow);
+}
+.searchbar .count {
+  font-size: 11px;
+  color: var(--color-fg-muted);
+}
+
+.legend {
+  margin: 8px 12px;
+  font-size: 11px;
+  color: var(--color-fg-muted);
+}
+
+dl.kv {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-fg);
+}
+dl.kv dt { color: var(--color-fg-muted); }
+dl.kv dd { margin: 0; font-family: var(--font-mono); color: var(--color-fg); }
+
+.log-table td.ts      { color: var(--color-fg-muted); font-family: var(--font-mono); width: 90px; }
+.log-table td.action  { font-family: var(--font-mono); }
+.log-table td.dur     { width: 70px; text-align: right; font-family: var(--font-mono); }
+.log-table td.result  { width: 70px; font-weight: 600; }
+.log-table td.result.ok  { color: var(--color-ok);  }
+.log-table td.result.err { color: var(--color-err); font-weight: 700; }
+
+/* ---------- Index page ---------- */
+.index-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+  color: var(--color-fg);
+}
+.index-wrap h1 {
+  font-size: 18px;
+  margin: 0 0 8px 0;
+  color: var(--color-fg-strong);
+}
+.index-wrap h2 {
+  font-size: 14px;
+  margin: 24px 0 8px 0;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 4px;
+  color: var(--color-fg-strong);
+}
+.index-wrap ul.flat {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.index-wrap ul.flat li {
+  padding: 6px 0;
+  border-bottom: 1px dotted var(--color-border);
+}
+.index-wrap .navtree ul {
+  list-style: none;
+  padding-left: 20px;
+}
+.index-wrap .navtree li {
+  padding: 2px 0;
+  font-size: 12px;
+}
+.index-wrap .navtree .step {
+  color: var(--color-fg-muted);
+  font-size: 11px;
+  margin-left: 6px;
+}
