@@ -31,6 +31,10 @@ from plck.models import TagDataType, TagNode, TagTree
 
 ExportFormat = Literal["excel", "json", "xml"]
 
+# File extension per export format. "excel" must map to "xlsx" — the format
+# key is not the file extension (the bug this prevents wrote ".excel" files).
+_EXT_BY_FORMAT: dict[str, str] = {"excel": "xlsx", "json": "json", "xml": "xml"}
+
 
 _SAFE_NAME_RE = re.compile(r"[^A-Za-z0-9._-]+")
 
@@ -63,7 +67,7 @@ def export_tags(
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     name = base_name or safe_filename(
-        tree.plc.nickname, tree.discovered_at, ext=fmt,
+        tree.plc.nickname, tree.discovered_at, ext=_EXT_BY_FORMAT.get(fmt, fmt),
     )
     if fmt == "excel":
         return [_write_excel(tree, out_dir / name)]
