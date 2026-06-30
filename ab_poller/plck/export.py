@@ -4,8 +4,8 @@ The output shape matches what the v1 TUI's `export_to_*` methods
 produced (verified against `plc_toolkit_consolidated.py:349-435`), so
 existing operators' downstream tooling keeps working unchanged.
 
-    Excel:  one sheet per top-level UDT, all tags flattened.
-            First sheet is an index of the PLC + timestamp.
+    Excel:  a PLC device-info sheet + a single flattened Tags sheet
+            (tree order, Level + full dotted path).
     JSON:   nested object preserving UDT structure.
     XML:    CIP-style tag path per element (uses ':' as the path
             separator because the Logix Designer XML format does).
@@ -22,11 +22,17 @@ import json
 import re
 import xml.dom.minidom
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Literal, Optional
 
-from plck.models import TagDataType, TagNode, TagTree
+from plck.models import PlcConnection, TagDataType, TagNode, TagTree
+
+try:
+    from zoneinfo import ZoneInfo
+    _CENTRAL = ZoneInfo("America/Chicago")
+except Exception:  # Windows without tzdata: fixed CST fallback.
+    _CENTRAL = timezone(timedelta(hours=-6))
 
 
 ExportFormat = Literal["excel", "json", "xml"]
@@ -35,8 +41,65 @@ ExportFormat = Literal["excel", "json", "xml"]
 # key is not the file extension (the bug this prevents wrote ".excel" files).
 _EXT_BY_FORMAT: dict[str, str] = {"excel": "xlsx", "json": "json", "xml": "xml"}
 
+_TEMPLATE_TOKENS = ("ip", "nickname", "slot", "YYYY-MM-DD", "HHmm")
 
 _SAFE_NAME_RE = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+def _to_central(iso_ts: str) -> datetime:
+    """Parse an ISO-8601 (UTC) timestamp and convert to Central time."""
+    raw = (iso_ts or "").strip()
+    if not raw:
+        return datetime.now(timezone.utc).astimezone(_CENTRAL)
+    try:
+        if raw.endswith("Z"):
+            dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        else:
+            dt = datetime.fromisoformat(raw)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+    except ValueError:
+        dt = datetime.now(timezone.utc)
+    return dt.astimezone(_CENTRAL)
+
+
+def format_central(iso_ts: str) -> str:
+    """Human label in Central time, e.g. '2026-06-30 10:15:00 CDT'."""
+    dt = _to_central(iso_ts)
+    tzname = dt.strftime("%Z") or "Central"
+    return dt.strftime("%Y-%m-%d %H:%M:%S ") + tzname
+
+
+def render_filename(
+    template: str,
+    *,
+    ip: str,
+    nickname: str,
+    slot,
+    when_iso: str,
+) -> str:
+    """Render a filename stem (no extension) from a template.
+
+    Tokens: {ip} {nickname} {slot} {YYYY-MM-DD} {HHmm}. The IP's dots become
+    dashes for a valid filename (10.250.5.123 -> 10-250-5-123). Timestamps
+    are Central. Empty tokens (e.g. a blank nickname) collapse so no double
+    separators remain: '{ip}_{nickname}_{YYYY-MM-DD}_{HHmm}' with no nickname
+    becomes 'ip_date_time'.
+    """
+    dt = _to_central(when_iso)
+    values = {
+        "ip": (ip or "").replace(".", "-"),
+        "nickname": (nickname or "").strip(),
+        "slot": "" if slot is None else str(slot),
+        "YYYY-MM-DD": dt.strftime("%Y-%m-%d"),
+        "HHmm": dt.strftime("%H%M"),
+    }
+    name = template or "{ip}_{YYYY-MM-DD}_{HHmm}"
+    for token in _TEMPLATE_TOKENS:
+        name = name.replace("{" + token + "}", values[token])
+    name = _SAFE_NAME_RE.sub("_", name)
+    name = re.sub(r"_{2,}", "_", name).strip("_-")
+    return name or (values["ip"] or "plc")
 
 
 def safe_filename(nickname: str, when: str, ext: str) -> str:
@@ -57,18 +120,32 @@ def export_tags(
     fmt: ExportFormat,
     out_dir: Path,
     base_name: Optional[str] = None,
+    filename_template: Optional[str] = None,
 ) -> list[Path]:
     """Export a tag tree to a single file in the requested format.
 
     Returns the list of written files (1 for any single format). The
     caller is responsible for creating `out_dir` if needed (this
     function does it for convenience).
+
+    `filename_template` (e.g. "{ip}_{nickname}_{YYYY-MM-DD}_{HHmm}") is used
+    when no explicit `base_name` is given; see :func:`render_filename`.
     """
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    name = base_name or safe_filename(
-        tree.plc.nickname, tree.discovered_at, ext=_EXT_BY_FORMAT.get(fmt, fmt),
-    )
+    ext = _EXT_BY_FORMAT.get(fmt, fmt)
+    if base_name:
+        name = base_name
+    elif filename_template:
+        name = render_filename(
+            filename_template,
+            ip=tree.plc.ip,
+            nickname=tree.plc.nickname,
+            slot=tree.plc.slot,
+            when_iso=tree.discovered_at,
+        ) + f".{ext}"
+    else:
+        name = safe_filename(tree.plc.nickname, tree.discovered_at, ext=ext)
     if fmt == "excel":
         return [_write_excel(tree, out_dir / name)]
     if fmt == "json":
@@ -197,6 +274,31 @@ def _require_openpyxl():
     return Workbook, Font, PatternFill
 
 
+def _write_plc_sheet(ws, plc: PlcConnection, bold, meta_fill, extra_rows=None):
+    """Write the shared 'PLC' device-info worksheet (same layout used by both
+    the tag export and the monitor-history export)."""
+    ws.title = "PLC"
+    rows = [
+        ("Nickname", plc.nickname),
+        ("IP", plc.ip),
+        ("Slot", str(plc.slot)),
+        ("Port", str(plc.port)),
+        ("CIP Path", plc.cip_path or "(slot only)"),
+        ("Product Name", plc.product_name or ""),
+        ("Revision", plc.revision or ""),
+        ("Serial Number", plc.serial_number or ""),
+    ]
+    if extra_rows:
+        rows.extend(extra_rows)
+    for r, (k, v) in enumerate(rows, start=1):
+        c1 = ws.cell(row=r, column=1, value=k)
+        ws.cell(row=r, column=2, value=v)
+        c1.font = bold
+        c1.fill = meta_fill
+    ws.column_dimensions["A"].width = 22
+    ws.column_dimensions["B"].width = 36
+
+
 def _walk_tree_with_depth(tree: TagTree):
     """Yield (depth, node) for every node, preorder, across all top-level
     tags. Depth 0 = top-level tag; deeper = UDT / array members."""
@@ -223,28 +325,15 @@ def _write_excel(tree: TagTree, path: Path) -> Path:
 
     # PLC metadata sheet.
     idx = wb.active
-    idx.title = "PLC"
-    rows = [
-        ("Nickname", tree.plc.nickname),
-        ("IP", tree.plc.ip),
-        ("Slot", str(tree.plc.slot)),
-        ("Port", str(tree.plc.port)),
-        ("CIP Path", tree.plc.cip_path or "(slot only)"),
-        ("Product Name", tree.plc.product_name or ""),
-        ("Revision", tree.plc.revision or ""),
-        ("Serial Number", tree.plc.serial_number or ""),
-        ("Discovered At", tree.discovered_at),
-        ("Discovery Duration (s)", f"{tree.discovery_duration_s:.2f}"),
-        ("Tag Count", str(tree.count())),
-        ("Leaf Count", str(tree.leaf_count())),
-    ]
-    for r, (k, v) in enumerate(rows, start=1):
-        c1 = idx.cell(row=r, column=1, value=k)
-        idx.cell(row=r, column=2, value=v)
-        c1.font = bold
-        c1.fill = meta_fill
-    idx.column_dimensions["A"].width = 22
-    idx.column_dimensions["B"].width = 36
+    _write_plc_sheet(
+        idx, tree.plc, bold, meta_fill,
+        extra_rows=[
+            ("Discovered At", format_central(tree.discovered_at)),
+            ("Discovery Duration (s)", f"{tree.discovery_duration_s:.2f}"),
+            ("Tag Count", str(tree.count())),
+            ("Leaf Count", str(tree.leaf_count())),
+        ],
+    )
 
     # Single flattened Tags sheet (tree order, all UDTs together).
     ws = wb.create_sheet(title="Tags")
@@ -281,21 +370,37 @@ def _write_excel(tree: TagTree, path: Path) -> Path:
 def export_monitor_history(
     watch: dict[str, dict],
     *,
-    nickname: str,
+    nickname: str = "",
     out_dir: Path,
     base_name: Optional[str] = None,
+    plc: Optional[PlcConnection] = None,
+    filename_template: Optional[str] = None,
 ) -> list[Path]:
     """Write monitor watch-list metadata and collected samples.
 
-    Produces one ``.xlsx`` workbook with **Tags** and **History** worksheets.
+    Produces one ``.xlsx`` workbook with **PLC** (device info, when ``plc`` is
+    given), **Tags**, and **History** worksheets — matching the tag-export
+    structure. ``filename_template`` is honored when no ``base_name`` is given.
     """
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    stem = base_name or _monitor_history_basename(nickname)
+    when_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if base_name:
+        stem = base_name
+    elif filename_template:
+        stem = render_filename(
+            filename_template,
+            ip=plc.ip if plc else "",
+            nickname=(plc.nickname if plc else nickname),
+            slot=plc.slot if plc else "",
+            when_iso=when_iso,
+        ) + "_monitor_history"
+    else:
+        stem = _monitor_history_basename(plc.nickname if plc else nickname)
     xlsx_path = out_dir / f"{stem}.xlsx"
 
     history_rows = _monitor_history_rows(watch)
-    _write_monitor_history_excel(watch, history_rows, xlsx_path)
+    _write_monitor_history_excel(watch, history_rows, xlsx_path, plc, when_iso)
     return [xlsx_path]
 
 
@@ -328,14 +433,31 @@ def _write_monitor_history_excel(
     watch: dict[str, dict],
     history_rows: list[tuple[str, str, float]],
     path: Path,
+    plc: Optional[PlcConnection] = None,
+    when_iso: Optional[str] = None,
 ) -> Path:
     Workbook, Font, PatternFill = _require_openpyxl()
     header_fill = PatternFill("solid", fgColor="1F3A5F")
     header_font = Font(bold=True, color="FFFFFF")
+    bold = Font(bold=True)
+    meta_fill = PatternFill("solid", fgColor="F0F4F8")
     wb = Workbook()
 
-    tags_ws = wb.active
-    tags_ws.title = "Tags"
+    # Shared PLC device-info sheet (matches the tag-export workbook).
+    if plc is not None:
+        _write_plc_sheet(
+            wb.active, plc, bold, meta_fill,
+            extra_rows=[
+                ("Exported At", format_central(
+                    when_iso or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                )),
+                ("Watch Tags", str(len(watch))),
+            ],
+        )
+        tags_ws = wb.create_sheet(title="Tags")
+    else:
+        tags_ws = wb.active
+        tags_ws.title = "Tags"
     tag_headers = ["Tag", "Data Type", "Last Value", "Last Quality", "Sample Count"]
     for c, h in enumerate(tag_headers, start=1):
         cell = tags_ws.cell(row=1, column=c, value=h)

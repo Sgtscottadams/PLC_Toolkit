@@ -8,7 +8,7 @@ equals their extension.
 
 from __future__ import annotations
 
-from plck.export import export_tags
+from plck.export import export_monitor_history, export_tags, render_filename
 from plck.models import PlcConnection, TagDataType, TagNode, TagTree
 
 
@@ -69,3 +69,62 @@ def test_xml_export_uses_xml_extension(tmp_path):
     written = export_tags(_tree(), fmt="xml", out_dir=tmp_path)
     assert written[0].suffix == ".xml"
     assert written[0].is_file()
+
+
+# -- filename template ---------------------------------------------------
+
+_TMPL = "{ip}_{nickname}_{YYYY-MM-DD}_{HHmm}"
+
+
+def test_render_filename_includes_ip_with_dashes():
+    name = render_filename(
+        _TMPL, ip="10.250.5.123", nickname="Skid A", slot=0,
+        when_iso="2026-06-30T15:15:00Z",  # 10:15 Central (CDT)
+    )
+    assert name.startswith("10-250-5-123_")
+    assert "Skid_A" in name
+    assert "2026-06-30" in name
+    assert name.endswith("_1015")
+
+
+def test_render_filename_blank_nickname_collapses():
+    name = render_filename(
+        _TMPL, ip="10.250.5.123", nickname="", slot=0,
+        when_iso="2026-06-30T15:15:00Z",
+    )
+    # No leftover double underscore where the nickname was.
+    assert "__" not in name
+    assert name == "10-250-5-123_2026-06-30_1015"
+
+
+def test_export_tags_applies_template(tmp_path):
+    tree = TagTree(
+        plc=PlcConnection(nickname="", ip="10.250.5.123"),
+        root=[TagNode(name="Speed", data_type=TagDataType.DINT)],
+        discovered_at="2026-06-30T15:15:00Z",
+    )
+    written = export_tags(
+        tree, fmt="json", out_dir=tmp_path, filename_template=_TMPL,
+    )[0]
+    assert written.name == "10-250-5-123_2026-06-30_1015.json"
+
+
+def test_monitor_history_has_plc_sheet(tmp_path):
+    from openpyxl import load_workbook
+
+    watch = {
+        "PIT204.PV": {
+            "data_type": "REAL", "last_value": 42.0, "last_quality": "Good",
+            "samples": [42.0], "sample_times": ["2026-06-30 - 10:00:00"],
+        }
+    }
+    plc = PlcConnection(nickname="Skid", ip="10.250.5.123", product_name="1769-L33ER")
+    written = export_monitor_history(
+        watch, out_dir=tmp_path, plc=plc, filename_template=_TMPL,
+    )[0]
+    wb = load_workbook(written)
+    assert wb.sheetnames == ["PLC", "Tags", "History"]
+    plc_vals = {wb["PLC"].cell(row=r, column=1).value: wb["PLC"].cell(row=r, column=2).value
+                for r in range(1, wb["PLC"].max_row + 1)}
+    assert plc_vals["IP"] == "10.250.5.123"
+    assert written.name.startswith("10-250-5-123_") and written.name.endswith("_monitor_history.xlsx")

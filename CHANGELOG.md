@@ -18,6 +18,51 @@ The project has two parallel surfaces:
 
 ---
 
+## 2026-06-30 — Fix freeze on bit-heavy PLCs: lazy bit children in Browse tree
+
+### Fixed (`ui/workspace_view.py`)
+- Bit expansion materialized every integer word's 8–64 BOOL children up
+  front, so a controller with many alarm/status words produced a massive
+  QTreeWidget. Building, searching, and filtering all walked that giant
+  item set, causing 15–20s searches and "Not Responding" freezes.
+- The Browse tree now creates a word's BOOL bit children **lazily** — only
+  when the operator expands that word (`itemExpanded` → `_on_item_expanded_lazy`).
+  Unexpanded words contribute one item each, so the tree size (and search /
+  filter cost) is back to pre-bit levels. Bits still appear on expand, in
+  exports, and remain monitorable; bit values are derived from the word's
+  already-read value when expanded. The full tag/leaf model is unchanged
+  (exports unaffected).
+- `tests/test_bit_lazy_tree.py` — lazy creation, no duplicate children on
+  re-expand, and bit-value derivation. Tests: 178 passed, 4 skipped.
+- Rebuilt `PLC_Toolkit.exe` and `dist_package/PLC_Toolkit.zip`.
+
+---
+
+## 2026-06-30 — Export: PLC sheet on history export, working filename template, Central time
+
+### Fixed / Added (`plck/export.py`, Export tab wiring)
+- **Filename template now actually applied.** Exports used a nickname-only
+  helper and ignored the template, so `{ip}` never appeared. `export_tags`
+  (and the monitor-history export) now render the template
+  (`{ip}_{nickname}_{YYYY-MM-DD}_{HHmm}`) via the new `render_filename()`.
+  - `{ip}` dots become dashes for a valid filename: `10.250.5.123` →
+    `10-250-5-123`.
+  - Blank `{nickname}` collapses cleanly (no `__`):
+    `{ip}_{nickname}_{date}_{time}` → `ip_date_time`.
+  - `{YYYY-MM-DD}` / `{HHmm}` are **Central** time, not Zulu.
+- **Excel w/ collected history now includes the PLC device-info sheet**, so
+  it matches the standard Excel export structure (PLC + Tags + History).
+  Extracted a shared `_write_plc_sheet()` used by both exports.
+- **Central time everywhere in exports.** The PLC sheet's timestamp
+  ("Discovered At" / "Exported At") is now Central with the zone label
+  (e.g. `2026-06-30 10:15:00 CDT`) instead of UTC `Z`. (Monitor history
+  sample timestamps were already Central.)
+- `tests/test_export_filename.py` extended (template, dashes, blank-nickname
+  collapse, Central conversion, history PLC sheet). Tests: 176 passed, 4 skipped.
+- Rebuilt `PLC_Toolkit.exe` and `dist_package/PLC_Toolkit.zip`.
+
+---
+
 ## 2026-06-30 — Bit expansion: integer tags expose individual BOOL bits
 
 ### Added (`plck/discovery.py`, `plck/models.py`, Browse tab)
