@@ -163,6 +163,9 @@ class BrowseTab(QWidget):
         self._all_leaf_tags: list[str] = []
         self._values_loaded: set[str] = set()
         self._priority_tags: set[str] = set()
+        # Bit-expanded integer words whose BOOL children are created lazily
+        # (on first expand) to keep the tree small/fast. Keyed by tag path.
+        self._bitword_nodes: dict[str, TagNode] = {}
         self._reprioritize_timer = QTimer(self)
         self._reprioritize_timer.setSingleShot(True)
         self._reprioritize_timer.setInterval(400)
@@ -200,6 +203,7 @@ class BrowseTab(QWidget):
         self.tree.setUniformRowHeights(True)
         self.tree.itemSelectionChanged.connect(self._on_tree_selection_changed)
         self.tree.itemClicked.connect(self._on_tree_item_clicked)
+        self.tree.itemExpanded.connect(self._on_item_expanded_lazy)
         h = self.tree.header()
         h.setStretchLastSection(False)
         h.setMinimumSectionSize(48)
@@ -329,6 +333,7 @@ class BrowseTab(QWidget):
         self.search_input.blockSignals(False)
         self._total_nodes = tree.count()
         self._total_leaves = tree.leaf_count()
+        self._bitword_nodes = {}
         self.tree.clear()
         self.tree.setUpdatesEnabled(False)
         try:
@@ -403,14 +408,20 @@ class BrowseTab(QWidget):
         item = QTreeWidgetItem(parent_item)
         item.setText(self._COL_TAG, node.name.rsplit(".", 1)[-1])
         item.setText(self._COL_TYPE, format_type_label(node))
-        if node.members:
-            for m in node.members:
-                self._add_tree_node(item, m)
-        item.setText(self._COL_VALUE, "—")
         # A bit-expanded integer word is both expandable (has BOOL bit
         # children) AND readable (the word value itself), so treat it like a
         # leaf for monitoring/value purposes.
         is_bitword = node.is_bit_word()
+        if node.members and not is_bitword:
+            for m in node.members:
+                self._add_tree_node(item, m)
+        elif is_bitword:
+            # Defer creating the 8–64 BOOL bit children until the operator
+            # expands this word — materializing them all up front made the
+            # tree huge and froze search/filter on bit-heavy controllers.
+            item.setChildIndicatorPolicy(QTreeWidgetItem.ShowIndicator)
+            self._bitword_nodes[node.name] = node
+        item.setText(self._COL_VALUE, "—")
         readable = is_bitword or not node.members
         item.setData(self._COL_TAG, self._ROLE_PATH, node.name)
         item.setData(self._COL_TAG, self._ROLE_IS_LEAF, readable)
@@ -877,6 +888,23 @@ class BrowseTab(QWidget):
             return
         for i in range(item.childCount()):
             item.child(i).setText(self._COL_VALUE, str((word >> i) & 1))
+
+    def _on_item_expanded_lazy(self, item: QTreeWidgetItem) -> None:
+        """Create a bit-word's BOOL children on first expand (lazy)."""
+        if item.childCount() > 0:
+            return  # already materialized, or a normal UDT parent
+        path = item.data(self._COL_TAG, self._ROLE_PATH)
+        node = self._bitword_nodes.get(str(path)) if path else None
+        if node is None:
+            return
+        self.tree.setUpdatesEnabled(False)
+        try:
+            for m in node.members:
+                self._add_tree_node(item, m)
+        finally:
+            self.tree.setUpdatesEnabled(True)
+        # Fill bit values from the word's already-read value, if any.
+        self._set_bit_children_values(item, item.text(self._COL_VALUE).strip())
 
     def _on_value_chunk(self, results: list[ReadResult]) -> None:
         if self._plc is None:
@@ -2441,6 +2469,8 @@ class WorkspaceView(QWidget):
                             self.monitor_tab.history_export_payload(),
                             nickname=nickname,
                             out_dir=outdir,
+                            plc=self._plc,
+                            filename_template=self.export_tab.template(),
                         )
                     )
                 except RuntimeError as e:
@@ -2516,9 +2546,15 @@ class WorkspaceView(QWidget):
 
         written = written if written is not None else []
         errors = errors if errors is not None else []
+        template = self.export_tab.template()
         for fmt in formats:
             try:
-                written.extend(export_tags(tree, fmt=fmt, out_dir=outdir))
+                written.extend(
+                    export_tags(
+                        tree, fmt=fmt, out_dir=outdir,
+                        filename_template=template,
+                    )
+                )
             except RuntimeError as e:
                 errors.append(f"{fmt}: {e}")
             except Exception as e:
