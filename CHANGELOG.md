@@ -18,6 +18,40 @@ The project has two parallel surfaces:
 
 ---
 
+## 2026-06-30 — Bits revealed on demand via (+) in the Type column
+
+### Changed (`ui/workspace_view.py`)
+- Integer words no longer show an always-present tree dropdown for their
+  bits. Instead the **Type column shows a `(+)`** (e.g. `DINT (32)  (+)`)
+  for any tag that has readable bits. Clicking it reveals that one tag's
+  BOOL bits (materialized + values derived from the word) and the marker
+  flips to `(-)`; clicking again collapses. Bits for all other tags stay
+  hidden. This keeps the tree clean and avoids materializing bits except
+  where the operator asks. No extra reads: the word value is already
+  scanned; bits are derived as `(word >> i) & 1`.
+- Filtering/search never materializes bits now (a matched word stays a
+  single row); the operator clicks `(+)` on the specific word to drill in.
+- `tests/test_bit_lazy_tree.py` updated for the (+) reveal/collapse flow.
+  Tests: 179 passed, 4 skipped.
+- Rebuilt `PLC_Toolkit.exe` and `dist_package/PLC_Toolkit.zip`.
+
+---
+
+## 2026-06-30 — "Expand all" skips bit-words (keeps it fast)
+
+### Changed (`ui/workspace_view.py`)
+- The Browse **Expand all** button now expands every node EXCEPT
+  bit-expanded integer words — their 8–64 BOOL bits stay collapsed and are
+  a manual click on the word. This keeps "Expand all" fast on bit-heavy
+  controllers (it no longer force-materializes every word's bits).
+  `_expand_all_except_bits()` replaces the plain `tree.expandAll()`.
+- `tests/test_bit_lazy_tree.py` — added a test that Expand all opens the
+  UDT but leaves the bit-word collapsed/unmaterialized. Tests: 179 passed,
+  4 skipped.
+- Rebuilt `PLC_Toolkit.exe` and `dist_package/PLC_Toolkit.zip`.
+
+---
+
 ## 2026-06-30 — Fix freeze on bit-heavy PLCs: lazy bit children in Browse tree
 
 ### Fixed (`ui/workspace_view.py`)
