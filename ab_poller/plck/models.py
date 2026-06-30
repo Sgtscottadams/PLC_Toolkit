@@ -143,6 +143,18 @@ class TagNode:
     #   module tags are treated as read/write = read-only-in-v2.0 = False.
     is_write_tag: bool = False
 
+    # Bit expansion: integer tags (DINT/INT/SINT/LINT and the bit-string
+    # types) are expanded into BOOL children named "<tag>.0" .. "<tag>.N".
+    # `bit_index` is set ONLY on those synthesized children. Their value is
+    # derived from the parent word, not read separately from the PLC.
+    bit_index: Optional[int] = None
+
+    def is_bit_word(self) -> bool:
+        """True if this is an integer word expanded into BOOL bit children."""
+        return bool(self.members) and all(
+            m.bit_index is not None for m in self.members
+        )
+
     def walk(self):
         """Yield this node, then all members recursively (preorder)."""
         yield self
@@ -154,7 +166,10 @@ class TagNode:
         return 1 + sum(m.count() for m in self.members)
 
     def leaf_count(self) -> int:
-        """Count of atomic leaves (no members)."""
+        """Count of value-bearing leaves. A bit-expanded integer word counts
+        as one leaf (the word); its derived bits are not counted."""
+        if self.is_bit_word():
+            return 1
         if not self.members:
             return 1
         return sum(m.leaf_count() for m in self.members)
@@ -193,12 +208,25 @@ class TagTree:
         return None
 
     def leaf_names(self) -> list[str]:
-        """All atomic leaf tag names (for export, for the monitor list)."""
-        out = []
+        """Value-readable leaf tag names (for the post-discovery batch read).
+
+        A bit-expanded integer word yields the WORD name (one read); its
+        derived BOOL bits are skipped so we don't issue 8–64x extra reads —
+        the UI derives each bit from the word value.
+        """
+        out: list[str] = []
+
+        def rec(node: TagNode) -> None:
+            if node.bit_index is not None:
+                return  # derived bit — value comes from the parent word
+            if node.is_bit_word() or not node.members:
+                out.append(node.name)
+                return
+            for m in node.members:
+                rec(m)
+
         for n in self.root:
-            for ln in n.walk():
-                if not ln.members:  # atomic leaf
-                    out.append(ln.name)
+            rec(n)
         return out
 
 
