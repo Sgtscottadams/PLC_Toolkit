@@ -181,6 +181,12 @@ def _write_json(tree: TagTree, path: Path) -> Path:
     return path
 
 
+def _export_children(node: TagNode) -> list[TagNode]:
+    """Member nodes to include in exports — excludes derived BOOL bits so the
+    export file stays compact (a DINT shows as one row, not 33)."""
+    return [m for m in node.members if m.bit_index is None]
+
+
 def _json_node(node: TagNode) -> dict:
     out: dict = {
         "name": node.name,
@@ -191,8 +197,9 @@ def _json_node(node: TagNode) -> dict:
     if node.is_array:
         out["is_array"] = True
         out["array_dim"] = list(node.array_dim)
-    if node.members:
-        out["members"] = [_json_node(m) for m in node.members]
+    children = _export_children(node)
+    if children:
+        out["members"] = [_json_node(m) for m in children]
     return out
 
 
@@ -245,7 +252,7 @@ def _xml_node(node: TagNode) -> ET.Element:
     if node.is_array:
         el.set("is_array", "true")
         el.set("array_dim", ",".join(str(d) for d in node.array_dim))
-    for m in node.members:
+    for m in _export_children(node):
         el.append(_xml_node(m))
     return el
 
@@ -304,7 +311,7 @@ def _walk_tree_with_depth(tree: TagTree):
     tags. Depth 0 = top-level tag; deeper = UDT / array members."""
     def _rec(node: TagNode, depth: int):
         yield depth, node
-        for m in node.members:
+        for m in _export_children(node):
             yield from _rec(m, depth + 1)
 
     for n in tree.root:
