@@ -177,7 +177,15 @@ class BrowseTab(QWidget):
         self.search_input.setPlaceholderText(
             "Filter tags… (e.g. PIT*, Facility* — comma separates terms)"
         )
-        self.search_input.textChanged.connect(self._on_filter_changed)
+        # Debounce filtering: re-filtering the whole tree on every keystroke
+        # froze typing on large PLCs. Run once typing pauses.
+        self._filter_timer = QTimer(self)
+        self._filter_timer.setSingleShot(True)
+        self._filter_timer.setInterval(250)
+        self._filter_timer.timeout.connect(
+            lambda: self._on_filter_changed(self.search_input.text())
+        )
+        self.search_input.textChanged.connect(lambda *_: self._filter_timer.start())
         self.count_label = QLabel("0 nodes")
         self.count_label.setObjectName("hint")
 

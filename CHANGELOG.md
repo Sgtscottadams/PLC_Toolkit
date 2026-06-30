@@ -18,6 +18,26 @@ The project has two parallel surfaces:
 
 ---
 
+## 2026-06-30 — Exclude bits from exports; debounce Browse search
+
+### Fixed (`plck/export.py`)
+- **Bits are excluded from export files.** The Excel/JSON/XML exports
+  walked every word's 8–64 derived BOOL bits, multiplying the file size
+  ~32x and freezing the (UI-thread) export — the screen went blank on
+  bit-heavy controllers. Exports now emit the integer word as a single
+  row/element and omit its bits (`_export_children()` filters bit nodes).
+  UDT members are unaffected.
+
+### Changed (`ui/workspace_view.py`)
+- **Browse search is debounced** (250 ms). Re-filtering the whole tree on
+  every keystroke caused stutter/temporary freezes while typing on large
+  PLCs; the filter now runs once typing pauses.
+- `tests/test_bit_expansion.py` gained an export-excludes-bits test; the
+  search tests flush the debounce. Tests: 180 passed, 4 skipped.
+- Rebuilt `PLC_Toolkit.exe` and `dist_package/PLC_Toolkit.zip`.
+
+---
+
 ## 2026-06-30 — Bits revealed on demand via (+) in the Type column
 
 ### Changed (`ui/workspace_view.py`)

@@ -44,6 +44,36 @@ def test_leaf_names_reads_word_not_bits():
     assert tree.count() == 1 + 16
 
 
+def test_exports_exclude_bits(tmp_path):
+    from openpyxl import load_workbook
+
+    from plck.export import export_tags
+
+    word = _build_node("Tank.ALARMS", "DINT", {}, max_depth=8, depth=0)
+    tree = TagTree(
+        plc=PlcConnection(nickname="T", ip="192.0.2.5"),
+        root=[word],
+        discovered_at="2026-06-30T00:00:00Z",
+    )
+
+    # JSON: word present, no bit members.
+    import json as _json
+    jpath = export_tags(tree, fmt="json", out_dir=tmp_path)[0]
+    payload = _json.loads(jpath.read_text(encoding="utf-8"))
+    assert payload["tags"][0]["name"] == "Tank.ALARMS"
+    assert "members" not in payload["tags"][0]
+
+    # XML: only the word element, no bit children.
+    xpath = export_tags(tree, fmt="xml", out_dir=tmp_path)[0]
+    assert xpath.read_text(encoding="utf-8").count("<Tag ") == 1
+
+    # Excel: one tag row (plus header), bits excluded.
+    epath = export_tags(tree, fmt="excel", out_dir=tmp_path)[0]
+    ws = load_workbook(epath)["Tags"]
+    tag_rows = [r for r in ws.iter_rows(min_row=2, values_only=True) if r[1]]
+    assert [r[1] for r in tag_rows] == ["Tank.ALARMS"]
+
+
 def test_bit_value_derivation():
     # bit i of the word value = (word >> i) & 1
     word_value = 0b1010  # bits 1 and 3 set

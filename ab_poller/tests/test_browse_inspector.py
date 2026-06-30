@@ -196,6 +196,8 @@ def test_search_finds_child_and_shows_parent_but_not_siblings(qapp):
     tab.load_tree(_tree())
 
     tab.search_input.setText("PV")
+    tab._filter_timer.stop()
+    tab._on_filter_changed("PV")  # flush debounce
     parent = _find_tree_item(tab, "PIT204")
     child_pv = _find_tree_item(tab, "PIT204.PV")
     child_sts = _find_tree_item(tab, "PIT204.Sts")
@@ -211,6 +213,8 @@ def test_search_wildcard_prefix(qapp):
     tab = BrowseTab()
     tab.load_tree(_tree())
     tab.search_input.setText("PIT*")
+    tab._filter_timer.stop()
+    tab._on_filter_changed("PIT*")  # flush debounce
     pit = _find_tree_item(tab, "PIT204")
     ft101 = _find_tree_item(tab, "FT101")
     assert pit is not None and not pit.isHidden()
@@ -221,6 +225,8 @@ def test_search_multi_term_or_with_wildcards(qapp):
     tab = BrowseTab()
     tab.load_tree(_tree())
     tab.search_input.setText("PIT*, Facility*")
+    tab._filter_timer.stop()
+    tab._on_filter_changed("PIT*, Facility*")  # flush debounce
     pit = _find_tree_item(tab, "PIT204")
     facility = _find_tree_item(tab, "Facility101")
     ft101 = _find_tree_item(tab, "FT101")
