@@ -85,9 +85,13 @@ def _write_spec(root: Path, logo_dst: Path, splash_dst: Path) -> Path:
 
     rel_logo = logo_dst.relative_to(root).as_posix()
     rel_splash = splash_dst.relative_to(root).as_posix()
+    rel_icon = "plc_toolkit/assets/app_icon.ico"
+    rel_icon_png = "plc_toolkit/assets/app_icon.png"
     datas = [
         (rel_logo, "plc_toolkit/assets"),
         (rel_splash, "plc_toolkit/assets"),
+        (rel_icon_png, "plc_toolkit/assets"),
+        (rel_icon, "plc_toolkit/assets"),
         *pyside_datas,
     ]
     hiddenimports = sorted(
@@ -162,6 +166,7 @@ exe = EXE(
     upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
+    icon='{rel_icon}',
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,

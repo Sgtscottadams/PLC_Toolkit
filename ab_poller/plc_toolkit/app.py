@@ -13,7 +13,7 @@ from typing import Optional
 
 import pylogix
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction, QKeySequence
+from PySide6.QtGui import QAction, QIcon, QKeySequence
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QMessageBox, QStackedWidget, QStatusBar,
 )
@@ -23,6 +23,7 @@ from plck.db import DatabaseManager
 from plck.models import PlcConnection
 
 from plc_toolkit import style as _style
+from plc_toolkit.resources import asset_path
 from plc_toolkit.settings_store import AppSettings, ensure_portable_layout
 from plc_toolkit.splash import show_startup_splash
 from plc_toolkit.ui import ConnectionView, WorkspaceView
@@ -182,6 +183,9 @@ def main() -> int:
     app = QApplication.instance() or QApplication(sys.argv)
     app.setApplicationName("PLC Toolkit")
     app.setOrganizationName("Continental Resources")
+    _icon_path = asset_path("app_icon.ico") or asset_path("app_icon.png")
+    if _icon_path is not None:
+        app.setWindowIcon(QIcon(str(_icon_path)))
     app.setStyleSheet(_style.STYLESHEET)
     splash = show_startup_splash(app)
     # Hand off from the bootloader splash to our own Qt splash.
