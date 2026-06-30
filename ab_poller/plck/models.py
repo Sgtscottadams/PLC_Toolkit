@@ -41,6 +41,17 @@ class TagDataType(str, Enum):
     OTHER = "OTHER"  # Anything we don't explicitly model
 
 
+# Integer / bit-string types that are bit-addressable in Logix (Tag.0..N-1).
+# Scalar tags of these types are expanded into BOOL bit children. Arrays are
+# not expanded. Bits are derived (and re-derived on load), never persisted.
+BIT_ADDRESSABLE_WIDTHS: dict[str, int] = {
+    "SINT": 8, "USINT": 8, "BYTE": 8,
+    "INT": 16, "UINT": 16, "WORD": 16,
+    "DINT": 32, "UDINT": 32, "DWORD": 32,
+    "LINT": 64, "ULINT": 64, "LWORD": 64,
+}
+
+
 class ReadQuality(str, Enum):
     """Quality of a single read result. Maps to the OPC UA quality codes
     operators are familiar with."""
@@ -154,6 +165,27 @@ class TagNode:
         return bool(self.members) and all(
             m.bit_index is not None for m in self.members
         )
+
+    def expand_bits(self) -> None:
+        """Attach BOOL bit children for a scalar integer/bit-string word.
+
+        No-op for arrays, non-integer types, or nodes that already have
+        members. Used by discovery and when re-loading a saved scan so the
+        two produce identical trees (bits are derived, never persisted)."""
+        if self.is_array or self.members:
+            return
+        width = BIT_ADDRESSABLE_WIDTHS.get(self.data_type.value)
+        if not width:
+            return
+        self.members = [
+            TagNode(
+                name=f"{self.name}.{i}",
+                data_type=TagDataType.BOOL,
+                bit_index=i,
+                is_write_tag=self.is_write_tag,
+            )
+            for i in range(width)
+        ]
 
     def walk(self):
         """Yield this node, then all members recursively (preorder)."""

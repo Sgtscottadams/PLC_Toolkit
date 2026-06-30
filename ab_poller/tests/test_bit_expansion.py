@@ -74,6 +74,33 @@ def test_exports_exclude_bits(tmp_path):
     assert [r[1] for r in tag_rows] == ["Tank.ALARMS"]
 
 
+def test_db_snapshot_excludes_bits_but_reexpands_on_load(tmp_path):
+    from plck.db import DatabaseManager, _serialize_tree
+
+    word = _build_node("Tank.ALARMS", "DINT", {}, max_depth=8, depth=0)
+    tree = TagTree(
+        plc=PlcConnection(nickname="T", ip="192.0.2.5"),
+        root=[word],
+        discovered_at="2026-06-30T00:00:00Z",
+    )
+
+    # Serialized form carries the word but NOT its 32 bits.
+    payload = _serialize_tree(tree)
+    assert payload[0]["name"] == "Tank.ALARMS"
+    assert "members" not in payload[0]
+
+    # Round-trip through the DB re-derives the bits so a loaded scan matches
+    # a live discovery.
+    db = DatabaseManager(path=str(tmp_path / "t.db"))
+    plc_id = db.upsert_plc(tree.plc)
+    scan_id = db.save_tag_snapshot(plc_id, tree)
+    loaded = db.load_scan(scan_id)
+    assert loaded is not None
+    assert loaded.root[0].is_bit_word()
+    assert len(loaded.root[0].members) == 32
+    assert loaded.root[0].members[5].bit_index == 5
+
+
 def test_bit_value_derivation():
     # bit i of the word value = (word >> i) & 1
     word_value = 0b1010  # bits 1 and 3 set

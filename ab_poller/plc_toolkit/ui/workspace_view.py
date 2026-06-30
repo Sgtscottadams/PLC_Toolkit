@@ -57,7 +57,10 @@ from plc_toolkit.ui.chart_dialog import MonitorChartDialog, TagChartDialog
 from plc_toolkit.ui.checkbox_cell import CenteredCheckBoxCell
 from plc_toolkit.worker_lifecycle import disconnect_worker_signals
 from plc_toolkit.ui.scan_dialogs import ScanBrowseDialog, ScanCompareDialog
-from plc_toolkit.workers import DiscoveryWorker, InspectorWorker, MonitorWorker, TreeValuePopulator
+from plc_toolkit.workers import (
+    DiscoveryWorker, ExportWorker, InspectorWorker, MonitorWorker,
+    TreeValuePopulator,
+)
 
 try:
     import pylogix
@@ -166,6 +169,9 @@ class BrowseTab(QWidget):
         # Bit-expanded integer words whose BOOL children are created lazily
         # (on first expand) to keep the tree small/fast. Keyed by tag path.
         self._bitword_nodes: dict[str, TagNode] = {}
+        # path -> tree item, so value updates are O(1) instead of walking the
+        # whole tree per value (this was a major cost during value population).
+        self._item_by_path: dict[str, QTreeWidgetItem] = {}
         self._reprioritize_timer = QTimer(self)
         self._reprioritize_timer.setSingleShot(True)
         self._reprioritize_timer.setInterval(400)
@@ -343,6 +349,7 @@ class BrowseTab(QWidget):
         self._total_nodes = tree.count()
         self._total_leaves = tree.leaf_count()
         self._bitword_nodes = {}
+        self._item_by_path = {}
         self.tree.clear()
         self.tree.setUpdatesEnabled(False)
         try:
@@ -433,6 +440,7 @@ class BrowseTab(QWidget):
         item.setText(self._COL_VALUE, "—")
         readable = is_bitword or not node.members
         item.setData(self._COL_TAG, self._ROLE_PATH, node.name)
+        self._item_by_path[node.name] = item
         item.setData(self._COL_TAG, self._ROLE_IS_LEAF, readable)
         item.setData(self._COL_TAG, self._ROLE_IS_WRITE, bool(node.is_write_tag))
         item.setData(self._COL_TAG, self._ROLE_IS_BITWORD, is_bitword)
@@ -886,13 +894,17 @@ class BrowseTab(QWidget):
         """Write the latest value into the tree's 'Value' column for the
         matching tag, so the operator sees live values inline without leaving
         the browse tab."""
-        for i in range(self.tree.topLevelItemCount()):
-            item = self._find_tree_item_by_path(self.tree.topLevelItem(i), tag)
-            if item is not None:
-                item.setText(self._COL_VALUE, repr(value))
-                if item.data(self._COL_TAG, self._ROLE_IS_BITWORD):
-                    self._set_bit_children_values(item, value)
-                return
+        item = self._item_by_path.get(tag)
+        if item is None:
+            return
+        try:
+            item.setText(self._COL_VALUE, repr(value))
+        except RuntimeError:
+            # Item was deleted (tree rebuilt) — drop the stale index entry.
+            self._item_by_path.pop(tag, None)
+            return
+        if item.data(self._COL_TAG, self._ROLE_IS_BITWORD):
+            self._set_bit_children_values(item, value)
 
     def _set_bit_children_values(self, item: QTreeWidgetItem, value) -> None:
         """Derive each BOOL bit's value from the parent integer word — no
@@ -970,14 +982,19 @@ class BrowseTab(QWidget):
             self._update_bitword_type_label(item)
 
     def _on_value_chunk(self, results: list[ReadResult]) -> None:
+        """Populate tree values from a batch-read chunk. The whole chunk is
+        applied under one repaint so value population stays smooth."""
         if self._plc is None:
             return
-        """Populate tree values from a batch-read chunk."""
-        for r in results:
-            self._values_loaded.add(r.tag_name)
-            if r.quality.value == "Good":
-                self._collected_values[r.tag_name] = r.value
-                self._update_tree_value(r.tag_name, r.value)
+        self.tree.setUpdatesEnabled(False)
+        try:
+            for r in results:
+                self._values_loaded.add(r.tag_name)
+                if r.quality.value == "Good":
+                    self._collected_values[r.tag_name] = r.value
+                    self._update_tree_value(r.tag_name, r.value)
+        finally:
+            self.tree.setUpdatesEnabled(True)
 
     def _find_tree_item_by_path(self, parent, tag: str):
         if parent.data(0, self._ROLE_PATH) == tag:
@@ -2022,6 +2039,8 @@ class WorkspaceView(QWidget):
         self._scan_source = "manual"
         self._discovery_worker: Optional[DiscoveryWorker] = None
         self._discovery_dialog: Optional[QProgressDialog] = None
+        self._export_worker: Optional[ExportWorker] = None
+        self._export_dialog: Optional[QProgressDialog] = None
         self._monitor_worker: Optional[MonitorWorker] = None
         self._connected = False
         self._connection_epoch = 0
@@ -2343,7 +2362,25 @@ class WorkspaceView(QWidget):
         self.diagnostics_tab.log_event(
             f"DISCOVERY complete: {n:,} nodes, {leaves:,} leaves, {elapsed:.1f}s"
         )
-        # Persist the snapshot.
+        # Start the monitor worker.
+        self._start_monitor()
+        # Auto-fill tree value column with a one-shot batch read of all
+        # leaf tags. Values appear gradually as each batch completes.
+        leaf_paths = tree.leaf_names()
+        if leaf_paths and self._plc is not None:
+            self.browse_tab.populate_tree_values(self._plc, leaf_paths)
+        # Persist the snapshot AFTER the tree has painted so connect feels
+        # instant. Deferred to the next event-loop turn (small/fast now that
+        # bits aren't serialized). Headless/test mode persists inline.
+        if os.environ.get("QT_QPA_PLATFORM") == "offscreen":
+            self._persist_snapshot(tree, self._connection_epoch)
+        else:
+            epoch = self._connection_epoch
+            QTimer.singleShot(0, lambda: self._persist_snapshot(tree, epoch))
+
+    def _persist_snapshot(self, tree: TagTree, epoch: int) -> None:
+        if not self._connected or epoch != self._connection_epoch:
+            return  # disconnected/reconnected before the deferred write ran
         try:
             plc_id = self.db.upsert_plc(tree.plc)
             self._last_scan_id = self.db.save_tag_snapshot(
@@ -2354,13 +2391,6 @@ class WorkspaceView(QWidget):
         except Exception as e:
             self.diagnostics_tab.log_event(f"DB write failed: {e}")
             self._last_scan_id = None
-        # Start the monitor worker.
-        self._start_monitor()
-        # Auto-fill tree value column with a one-shot batch read of all
-        # leaf tags. Values appear gradually as each batch completes.
-        leaf_paths = tree.leaf_names()
-        if leaf_paths and self._plc is not None:
-            self.browse_tab.populate_tree_values(self._plc, leaf_paths)
 
     def _on_scan_values_saved(self, values: dict) -> None:
         if not self._connected or self._plc is None:
@@ -2509,41 +2539,27 @@ class WorkspaceView(QWidget):
         tree_source = srcs.get("tree", True)
         watch_source = srcs.get("watch", False)
         history_source = srcs.get("history", False)
+        template = self.export_tab.template()
 
-        written: list[Path] = []
-        errors: list[str] = []
+        pre_errors: list[str] = []
+        history_payload = None
+        nickname = self._plc.nickname if self._plc is not None else "plc"
 
+        # Resolve the monitor-history job (validated on the UI thread).
         if want_history:
             if not watch_source:
-                errors.append(
+                pre_errors.append(
                     "excel_history: select Monitor watch list only as the source"
                 )
             elif not self.monitor_tab.watch_list():
-                errors.append("excel_history: watch list is empty")
+                pre_errors.append("excel_history: watch list is empty")
             else:
-                try:
-                    from plck.export import export_monitor_history
+                history_payload = self.monitor_tab.history_export_payload()
 
-                    nickname = (
-                        self._plc.nickname if self._plc is not None else "plc"
-                    )
-                    written.extend(
-                        export_monitor_history(
-                            self.monitor_tab.history_export_payload(),
-                            nickname=nickname,
-                            out_dir=outdir,
-                            plc=self._plc,
-                            filename_template=self.export_tab.template(),
-                        )
-                    )
-                except RuntimeError as e:
-                    errors.append(f"excel_history: {e}")
-                except Exception as e:
-                    errors.append(f"excel_history: {e}")
-
-        # Historical scan source: load from Export tab dropdown.
-        if history_source:
-            if tree_formats:
+        # Resolve the tag-tree job (load saved scan or use the live/synth tree).
+        export_tree = None
+        if tree_formats:
+            if history_source:
                 scan_id = self.export_tab.selected_history_scan_id()
                 if scan_id is None:
                     QMessageBox.warning(
@@ -2551,38 +2567,86 @@ class WorkspaceView(QWidget):
                         "Choose a saved scan from the dropdown on the Export tab.",
                     )
                     return
-                tree = self.db.load_scan(scan_id)
-                if tree is None:
+                export_tree = self.db.load_scan(scan_id)
+                if export_tree is None:
                     QMessageBox.warning(
                         self, "Load failed",
                         f"Could not load scan {scan_id} from the database.",
                     )
                     return
-                self._export_tree(tree, tree_formats, outdir, written, errors)
-            elif not written and not errors:
-                QMessageBox.warning(
-                    self, "No formats selected",
-                    "Select Excel, JSON, or XML for a saved scan export.",
+            else:
+                if self._tree is None:
+                    QMessageBox.warning(
+                        self, "Nothing to export",
+                        "Connect to a PLC and run discovery first, or export a "
+                        "saved scan from the dropdown.",
+                    )
+                    return
+                export_tree = (
+                    self._synthesize_watch_tree() if watch_source else self._tree
                 )
-            self._finish_export_status(written, errors)
-            return
 
-        if tree_formats:
-            if self._tree is None:
-                QMessageBox.warning(
-                    self, "Nothing to export",
-                    "Connect to a PLC and run discovery first, or export a saved "
-                    "scan from the dropdown.",
-                )
-                return
-            tree = self._synthesize_watch_tree() if watch_source else self._tree
-            self._export_tree(tree, tree_formats, outdir, written, errors)
-
-        if not written and not errors:
+        if export_tree is None and history_payload is None and not pre_errors:
             QMessageBox.warning(
                 self, "Nothing exported",
                 "No files were written. Check source and format selections.",
             )
+            return
+
+        worker = ExportWorker(
+            out_dir=outdir,
+            filename_template=template,
+            tree=export_tree,
+            tree_formats=tree_formats,
+            history_payload=history_payload,
+            history_plc=self._plc,
+            history_nickname=nickname,
+            pre_errors=pre_errors,
+        )
+
+        if auto_confirm:
+            # Test / headless mode: run synchronously so results are immediate.
+            written, errors = worker.execute()
+            self._finish_export_status(written, errors)
+            return
+
+        # Threaded export with an "Exporting…" busy popup so the UI never
+        # freezes while files are written.
+        self._show_export_dialog()
+        self._export_worker = worker
+        worker.signals.progress.connect(self._on_export_progress)
+        worker.signals.finished.connect(self._on_export_finished)
+        worker.start()
+
+    def _show_export_dialog(self) -> None:
+        self._close_export_dialog()
+        dlg = QProgressDialog("Exporting…", None, 0, 0, self)
+        dlg.setWindowTitle("Exporting")
+        dlg.setWindowModality(Qt.WindowModal)
+        dlg.setCancelButton(None)  # writes can't be safely aborted mid-file
+        dlg.setMinimumDuration(0)
+        dlg.setAutoClose(False)
+        dlg.setAutoReset(False)
+        dlg.setValue(0)
+        self._export_dialog = dlg
+        dlg.show()
+
+    def _close_export_dialog(self) -> None:
+        dlg = getattr(self, "_export_dialog", None)
+        if dlg is None:
+            return
+        self._export_dialog = None
+        dlg.reset()
+        dlg.deleteLater()
+
+    def _on_export_progress(self, msg: str) -> None:
+        dlg = getattr(self, "_export_dialog", None)
+        if dlg is not None:
+            dlg.setLabelText(msg)
+
+    def _on_export_finished(self, written: list, errors: list) -> None:
+        self._close_export_dialog()
+        self._export_worker = None
         self._finish_export_status(written, errors)
 
     def _finish_export_status(
@@ -2596,32 +2660,6 @@ class WorkspaceView(QWidget):
             msg = " | Errors: " + "; ".join(errors)
             prev = self.export_tab.status_label.text()
             self.export_tab.status_label.setText(prev + msg if prev else msg.strip())
-
-    def _export_tree(
-        self,
-        tree,
-        formats,
-        outdir,
-        written: Optional[list] = None,
-        errors: Optional[list] = None,
-    ) -> None:
-        from plck.export import export_tags
-
-        written = written if written is not None else []
-        errors = errors if errors is not None else []
-        template = self.export_tab.template()
-        for fmt in formats:
-            try:
-                written.extend(
-                    export_tags(
-                        tree, fmt=fmt, out_dir=outdir,
-                        filename_template=template,
-                    )
-                )
-            except RuntimeError as e:
-                errors.append(f"{fmt}: {e}")
-            except Exception as e:
-                errors.append(f"{fmt}: {e}")
 
     def _stop_discovery_worker(self, wait_ms: int = 10000) -> None:
         self._close_discovery_dialog()
@@ -2641,6 +2679,14 @@ class WorkspaceView(QWidget):
     def _stop_workers(self) -> None:
         self._connected = False
         self._connection_epoch += 1
+
+        if self._export_worker is not None:
+            worker = self._export_worker
+            self._export_worker = None
+            self._disconnect_worker_signals(worker)
+            if worker.isRunning():
+                worker.wait(10000)
+            self._close_export_dialog()
 
         if self._monitor_worker is not None:
             worker = self._monitor_worker
