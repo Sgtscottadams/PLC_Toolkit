@@ -3,6 +3,9 @@ pylogix==1.1.5
 openpyxl==3.1.5
 pytest==9.1.0
 tzdata>=2024.1
+# Build-time only: regenerate the exe/app icon (app_icon.ico) from the
+# source PNG in build_windows.py. Not imported by the running app.
+Pillow==12.2.0
 
 # Legacy TUI theme: soft import in plc_toolkit_consolidated.py, so the
 # TUI runs without it (theme falls back to no-color). Required for the

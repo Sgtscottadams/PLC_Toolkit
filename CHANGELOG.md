@@ -18,6 +18,21 @@ The project has two parallel surfaces:
 
 ---
 
+## 2026-06-30 — App icon (PLC Toolkit / Allen-Bradley CompactLogix)
+
+### Added (`build_windows.py`, `plc_toolkit/app.py`, assets)
+- Custom application icon. Added `plc_toolkit/assets/app_icon.png` (source)
+  and a multi-resolution `app_icon.ico` (16–256 px). The PyInstaller EXE
+  now embeds the icon (`icon=` in the spec) so `PLC_Toolkit.exe` shows the
+  logo in Explorer/taskbar, and the app sets it as the window icon at
+  startup (`QApplication.setWindowIcon`). Both files are bundled as data
+  for the runtime window icon.
+- `Pillow` added to `requirements.txt` as a **build-time only** dependency
+  (icon generation); it is not imported by the running app.
+- Rebuilt `PLC_Toolkit.exe` and `dist_package/PLC_Toolkit.zip`.
+
+---
+
 ## 2026-06-29 — Diagnostics: show Vendor and Serial (no longer "?")
 
 ### Fixed (`ui/workspace_view.py`)
