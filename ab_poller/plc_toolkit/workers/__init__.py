@@ -97,6 +97,80 @@ class DiscoveryWorker(QThread):
                 self.signals.failed.emit(f"Unexpected error: {e!r}")
 
 
+class _ExportSignals(QObject):
+    progress = Signal(str)
+    finished = Signal(object, object)  # written: list[Path], errors: list[str]
+
+
+class ExportWorker(QThread):
+    """Write export files off the UI thread so a large export never freezes
+    the window. All inputs are resolved on the UI thread and passed in; this
+    worker only performs the file writes."""
+
+    def __init__(
+        self,
+        *,
+        out_dir,
+        filename_template: str = "",
+        tree=None,
+        tree_formats: Optional[list] = None,
+        history_payload: Optional[dict] = None,
+        history_plc=None,
+        history_nickname: str = "plc",
+        pre_errors: Optional[list] = None,
+    ) -> None:
+        super().__init__()
+        self.out_dir = out_dir
+        self.filename_template = filename_template
+        self.tree = tree
+        self.tree_formats = list(tree_formats or [])
+        self.history_payload = history_payload
+        self.history_plc = history_plc
+        self.history_nickname = history_nickname
+        self.pre_errors = list(pre_errors or [])
+        self.signals = _ExportSignals()
+
+    def execute(self) -> tuple[list, list]:
+        """Run the export synchronously. Returns (written, errors)."""
+        from plck.export import export_monitor_history, export_tags
+
+        written: list = []
+        errors: list = list(self.pre_errors)
+
+        if self.history_payload is not None:
+            try:
+                self.signals.progress.emit("Exporting monitor history…")
+                written.extend(
+                    export_monitor_history(
+                        self.history_payload,
+                        nickname=self.history_nickname,
+                        out_dir=self.out_dir,
+                        plc=self.history_plc,
+                        filename_template=self.filename_template,
+                    )
+                )
+            except Exception as e:
+                errors.append(f"excel_history: {e}")
+
+        if self.tree is not None and self.tree_formats:
+            for fmt in self.tree_formats:
+                try:
+                    self.signals.progress.emit(f"Exporting {fmt}…")
+                    written.extend(
+                        export_tags(
+                            self.tree, fmt=fmt, out_dir=self.out_dir,
+                            filename_template=self.filename_template,
+                        )
+                    )
+                except Exception as e:
+                    errors.append(f"{fmt}: {e}")
+        return written, errors
+
+    def run(self) -> None:
+        written, errors = self.execute()
+        self.signals.finished.emit(written, errors)
+
+
 class _MonitorSignals(QObject):
     started = Signal()
     sample = Signal(list)  # list[ReadResult] for this poll

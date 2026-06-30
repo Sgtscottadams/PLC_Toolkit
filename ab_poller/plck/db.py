@@ -439,8 +439,11 @@ def _serialize_node(node) -> dict:
         out["array_dim"] = list(node.array_dim)
     if node.is_write_tag:
         out["is_write_tag"] = True
-    if node.members:
-        out["members"] = [_serialize_node(m) for m in node.members]
+    # Do NOT persist derived BOOL bits — they bloat the snapshot ~32x and are
+    # re-derived on load. A bit-expanded word is stored as a plain word.
+    children = [m for m in node.members if m.bit_index is None]
+    if children:
+        out["members"] = [_serialize_node(m) for m in children]
     return out
 
 
@@ -450,7 +453,7 @@ def _serialize_tree(tree: TagTree) -> list[dict]:
 
 def _deserialize_node(payload: dict) -> "TagNode":
     from plck.models import TagNode, TagDataType
-    return TagNode(
+    node = TagNode(
         name=payload["name"],
         data_type=TagDataType(payload.get("data_type", "OTHER")),
         udt_name=payload.get("udt_name"),
@@ -459,6 +462,10 @@ def _deserialize_node(payload: dict) -> "TagNode":
         is_write_tag=bool(payload.get("is_write_tag", False)),
         members=[_deserialize_node(m) for m in payload.get("members", [])],
     )
+    # Re-derive BOOL bits for scalar integer words so a loaded scan matches a
+    # live discovery (bits are never persisted).
+    node.expand_bits()
+    return node
 
 
 def _deserialize_tree(plc: PlcConnection, payload: list, ts: str) -> TagTree:

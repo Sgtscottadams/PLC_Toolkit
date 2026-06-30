@@ -53,3 +53,6 @@ Thumbs.db
 # Agent / local tooling
 .claude/
 ab_poller/.claude/
+
+# Scratch / audit temp
+tmp_aud/

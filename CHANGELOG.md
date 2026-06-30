@@ -18,6 +18,40 @@ The project has two parallel surfaces:
 
 ---
 
+## 2026-06-30 — Responsiveness Tier 1+2: stop UI-thread stalls
+
+Targeted the remaining freeze sources (data volume amplified by bit
+expansion). No feature behavior changed.
+
+### Changed (`plck/models.py`, `plck/db.py`, `plck/discovery.py`)
+- **Bits are no longer persisted in the scan snapshot.** `save_tag_snapshot`
+  wrote every word's 8–64 derived bits (~32x larger JSON) synchronously on
+  the UI thread → freeze right after connect, and again on load. The DB now
+  stores words only and **re-derives bits on load** (`TagNode.expand_bits()`
+  + shared `BIT_ADDRESSABLE_WIDTHS` in `models`, used by both discovery and
+  `_deserialize_node`). Also fixes a latent bug where loaded scans didn't
+  recognize bits (`bit_index` wasn't persisted).
+
+### Added / Changed (`plc_toolkit/workers/__init__.py`, `ui/workspace_view.py`)
+- **Export runs on a worker thread with an "Exporting…" busy popup** (like
+  the discovery dialog). The export ran synchronously on the UI thread and
+  blanked the window on large datasets. New `ExportWorker`; validation/DB
+  load stay on the UI thread, file writes go to the worker. Headless/test
+  mode runs inline.
+- **Post-discovery DB snapshot write is deferred** to the next event-loop
+  turn (guarded by connection epoch) so the tag tree paints immediately on
+  connect; the (now small) write happens just after. Inline in test mode.
+- **Value population is batched and indexed.** `_update_tree_value` used to
+  walk the whole tree per value (O(N) each); it now uses an O(1)
+  path→item index, and each read chunk is applied under a single repaint.
+  Visible/selected tags are still read first.
+
+### Tests
+- Added DB bit round-trip and `ExportWorker` tests; 181 passed, 4 skipped.
+- Rebuilt `PLC_Toolkit.exe` and `dist_package/PLC_Toolkit.zip`.
+
+---
+
 ## 2026-06-30 — Exclude bits from exports; debounce Browse search
 
 ### Fixed (`plck/export.py`)

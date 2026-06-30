@@ -49,18 +49,10 @@ _ATOMIC_TYPES = {
     "DATE", "TIME_OF_DAY", "DATE_AND_TIME",
 }
 
-# Integer / bit-string types that are bit-addressable in Logix (Tag.0 ..
-# Tag.N-1). Scalar tags of these types are expanded into BOOL bit children
-# so operators can browse/monitor individual bits (e.g. alarm words). Arrays
-# of these types are NOT expanded (would multiply the tree by 8–64x per
-# element). Bit values are derived from the parent word in the UI, not read
-# per-bit from the PLC.
-_BIT_WIDTHS = {
-    "SINT": 8, "USINT": 8, "BYTE": 8,
-    "INT": 16, "UINT": 16, "WORD": 16,
-    "DINT": 32, "UDINT": 32, "DWORD": 32,
-    "LINT": 64, "ULINT": 64, "LWORD": 64,
-}
+# Bit-addressable widths live in plck.models (BIT_ADDRESSABLE_WIDTHS) so
+# discovery and saved-scan loading expand bits identically. Scalar integer /
+# bit-string words get BOOL bit children via TagNode.expand_bits(); arrays
+# are not expanded. Bit values are derived in the UI, never read per-bit.
 
 # AB POINT I/O module suffixes that imply write-locked configuration.
 # Format is `AB:1734_XXXX:C:0` for configuration data, `:I:0` for
@@ -188,17 +180,7 @@ def _build_node(
             is_write_tag=_looks_like_write_tag(name),
         )
         # Expand bit-addressable integer/bit-string words into BOOL bits.
-        width = _BIT_WIDTHS.get(element_type)
-        if width:
-            node.members = [
-                TagNode(
-                    name=f"{name}.{i}",
-                    data_type=TagDataType.BOOL,
-                    bit_index=i,
-                    is_write_tag=node.is_write_tag,
-                )
-                for i in range(width)
-            ]
+        node.expand_bits()
         return node
     if not is_array and element_type not in udt_by_name:
         # Not atomic, not a UDT we know — call it OTHER.

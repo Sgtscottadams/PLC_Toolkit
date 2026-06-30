@@ -109,6 +109,19 @@ def test_export_tags_applies_template(tmp_path):
     assert written.name == "10-250-5-123_2026-06-30_1015.json"
 
 
+def test_export_worker_writes_files(tmp_path):
+    from plc_toolkit.workers import ExportWorker
+
+    worker = ExportWorker(
+        out_dir=tmp_path, tree=_tree(), tree_formats=["json", "xml"],
+    )
+    # execute() is the synchronous path the worker thread runs.
+    written, errors = worker.execute()
+    assert errors == []
+    assert {p.suffix for p in written} == {".json", ".xml"}
+    assert all(p.is_file() for p in written)
+
+
 def test_monitor_history_has_plc_sheet(tmp_path):
     from openpyxl import load_workbook
 
