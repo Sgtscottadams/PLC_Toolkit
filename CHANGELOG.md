@@ -18,6 +18,21 @@ The project has two parallel surfaces:
 
 ---
 
+## 2026-06-30 — Fix Excel export extension (.excel → .xlsx)
+
+### Fixed (`plck/export.py`)
+- The Excel export ("Excel (.xlsx) — one sheet per UDT, all tags
+  flattened") wrote files named `*.excel` instead of `*.xlsx`. The export
+  used the format key ("excel") directly as the file extension;
+  JSON/XML were correct only because their key equals their extension.
+  Added `_EXT_BY_FORMAT` so "excel" maps to "xlsx". Affects all callers of
+  `export_tags` (the Export tab passes no explicit filename).
+- `ab_poller/tests/test_export_filename.py` — 3 tests pinning the
+  `.xlsx`/`.json`/`.xml` extensions per format.
+- Rebuilt `PLC_Toolkit.exe` and `dist_package/PLC_Toolkit.zip`.
+
+---
+
 ## 2026-06-30 — App icon (PLC Toolkit / Allen-Bradley CompactLogix)
 
 ### Added (`build_windows.py`, `plc_toolkit/app.py`, assets)
