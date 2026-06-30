@@ -41,24 +41,50 @@ def _tree() -> TagTree:
     )
 
 
-def test_bit_children_are_lazy_until_expanded(qapp):
+def test_bit_children_are_lazy_until_revealed(qapp):
     tab = BrowseTab()
     tab.load_tree(_tree())
 
     word = tab.tree.topLevelItem(0)
-    # Not materialized yet — no 32 child items sitting in the widget.
+    # Not materialized yet — no 32 child items, and a (+) affordance in Type.
     assert word.childCount() == 0
+    assert word.text(tab._COL_TYPE).endswith("(+)")
 
-    # Simulate the operator expanding the word.
-    word.setExpanded(True)
+    # Simulate the operator clicking the (+) in the Type column.
+    tab._on_tree_item_clicked(word, tab._COL_TYPE)
     assert word.childCount() == 32
+    assert word.isExpanded()
+    assert word.text(tab._COL_TYPE).endswith("(-)")
     assert word.child(0).text(tab._COL_TAG) == "0"
     assert word.child(31).text(tab._COL_TAG) == "31"
 
-    # Re-expanding does not duplicate children.
-    word.setExpanded(False)
-    word.setExpanded(True)
+    # Toggling again collapses without duplicating children; marker flips.
+    tab._on_tree_item_clicked(word, tab._COL_TYPE)
     assert word.childCount() == 32
+    assert not word.isExpanded()
+    assert word.text(tab._COL_TYPE).endswith("(+)")
+
+
+def test_expand_all_skips_bit_words(qapp):
+    udt = TagNode(name="Well_1", data_type=TagDataType.UDT, udt_name="WELL")
+    udt.members = [_dint_with_bits("Well_1.WELL_ALARM_WORD")]
+    tree = TagTree(
+        plc=PlcConnection(nickname="T", ip="192.0.2.10"),
+        root=[udt],
+        discovered_at="2026-06-17T00:00:00Z",
+    )
+    tab = BrowseTab()
+    tab.load_tree(tree)
+
+    tab._expand_all_except_bits()
+
+    udt_item = tab.tree.topLevelItem(0)
+    word_item = udt_item.child(0)
+    # The UDT is expanded so the word is visible...
+    assert udt_item.isExpanded()
+    # ...but the bit-word is NOT expanded and its bits are not materialized.
+    assert not word_item.isExpanded()
+    assert word_item.childCount() == 0
 
 
 def test_expanded_bits_derive_values_from_word(qapp):
@@ -68,6 +94,6 @@ def test_expanded_bits_derive_values_from_word(qapp):
 
     # Word value arrives (bit 1 and bit 3 set => 0b1010 = 10).
     tab._update_tree_value("Well_1.WELL_ALARM_WORD", 10)
-    word.setExpanded(True)
+    tab._on_tree_item_clicked(word, tab._COL_TYPE)  # reveal bits
     bits = [word.child(i).text(tab._COL_VALUE) for i in range(4)]
     assert bits == ["0", "1", "0", "1"]

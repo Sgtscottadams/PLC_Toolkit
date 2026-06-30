@@ -194,7 +194,7 @@ class BrowseTab(QWidget):
         tree_toolbar.addWidget(expand_all_btn)
         tree_toolbar.addWidget(collapse_all_btn)
         tree_toolbar.addStretch()
-        expand_all_btn.clicked.connect(lambda *_: self.tree.expandAll())
+        expand_all_btn.clicked.connect(lambda *_: self._expand_all_except_bits())
         collapse_all_btn.clicked.connect(lambda *_: self.tree.collapseAll())
 
         self.tree = QTreeWidget()
@@ -204,6 +204,7 @@ class BrowseTab(QWidget):
         self.tree.itemSelectionChanged.connect(self._on_tree_selection_changed)
         self.tree.itemClicked.connect(self._on_tree_item_clicked)
         self.tree.itemExpanded.connect(self._on_item_expanded_lazy)
+        self.tree.itemCollapsed.connect(self._on_item_collapsed_bitword)
         h = self.tree.header()
         h.setStretchLastSection(False)
         h.setMinimumSectionSize(48)
@@ -416,10 +417,10 @@ class BrowseTab(QWidget):
             for m in node.members:
                 self._add_tree_node(item, m)
         elif is_bitword:
-            # Defer creating the 8–64 BOOL bit children until the operator
-            # expands this word — materializing them all up front made the
-            # tree huge and froze search/filter on bit-heavy controllers.
-            item.setChildIndicatorPolicy(QTreeWidgetItem.ShowIndicator)
+            # Bits are revealed on demand: a (+) in the Type column, not an
+            # always-visible tree arrow. Children are created only when the
+            # operator clicks (+) — keeps the tree small and reads minimal.
+            item.setText(self._COL_TYPE, format_type_label(node) + "  (+)")
             self._bitword_nodes[node.name] = node
         item.setText(self._COL_VALUE, "—")
         readable = is_bitword or not node.members
@@ -437,6 +438,12 @@ class BrowseTab(QWidget):
         return item
 
     def _on_tree_item_clicked(self, item: QTreeWidgetItem, column: int) -> None:
+        # Clicking the (+)/(-) in the Type column reveals/hides a word's bits.
+        if column == self._COL_TYPE and item.data(
+            self._COL_TAG, self._ROLE_IS_BITWORD
+        ):
+            self._toggle_bits(item)
+            return
         if column != self._COL_MONITOR:
             return
         action = item.text(self._COL_MONITOR)
@@ -889,10 +896,29 @@ class BrowseTab(QWidget):
         for i in range(item.childCount()):
             item.child(i).setText(self._COL_VALUE, str((word >> i) & 1))
 
-    def _on_item_expanded_lazy(self, item: QTreeWidgetItem) -> None:
-        """Create a bit-word's BOOL children on first expand (lazy)."""
+    def _expand_all_except_bits(self) -> None:
+        """Expand every node EXCEPT bit-expanded integer words. The 8–64 bits
+        under a word stay collapsed (a manual click on the word), so this is
+        fast even on bit-heavy controllers."""
+        self.tree.setUpdatesEnabled(False)
+        try:
+            for i in range(self.tree.topLevelItemCount()):
+                self._expand_item_except_bits(self.tree.topLevelItem(i))
+        finally:
+            self.tree.setUpdatesEnabled(True)
+
+    def _expand_item_except_bits(self, item: QTreeWidgetItem) -> None:
+        if item.data(self._COL_TAG, self._ROLE_IS_BITWORD):
+            return  # leave bit-words collapsed; bits expand on manual click
+        item.setExpanded(True)
+        for i in range(item.childCount()):
+            self._expand_item_except_bits(item.child(i))
+
+    def _materialize_bits(self, item: QTreeWidgetItem) -> None:
+        """Create a bit-word's BOOL children once, deriving values from the
+        word's already-read value (no extra PLC reads)."""
         if item.childCount() > 0:
-            return  # already materialized, or a normal UDT parent
+            return
         path = item.data(self._COL_TAG, self._ROLE_PATH)
         node = self._bitword_nodes.get(str(path)) if path else None
         if node is None:
@@ -903,8 +929,37 @@ class BrowseTab(QWidget):
                 self._add_tree_node(item, m)
         finally:
             self.tree.setUpdatesEnabled(True)
-        # Fill bit values from the word's already-read value, if any.
         self._set_bit_children_values(item, item.text(self._COL_VALUE).strip())
+
+    def _toggle_bits(self, item: QTreeWidgetItem) -> None:
+        """Reveal (first click) or collapse/expand a word's bits."""
+        if item.childCount() == 0:
+            self._materialize_bits(item)
+            item.setExpanded(True)
+        else:
+            item.setExpanded(not item.isExpanded())
+        self._update_bitword_type_label(item)
+
+    def _update_bitword_type_label(self, item: QTreeWidgetItem) -> None:
+        path = item.data(self._COL_TAG, self._ROLE_PATH)
+        node = self._bitword_nodes.get(str(path)) if path else None
+        if node is None:
+            return
+        base = format_type_label(node)
+        marker = "(-)" if (item.childCount() > 0 and item.isExpanded()) else "(+)"
+        item.setText(self._COL_TYPE, f"{base}  {marker}")
+
+    def _on_item_expanded_lazy(self, item: QTreeWidgetItem) -> None:
+        """Safety net: if a bit-word is expanded via the tree arrow (after it
+        has been revealed once), make sure its bits exist and the label syncs."""
+        if not item.data(self._COL_TAG, self._ROLE_IS_BITWORD):
+            return
+        self._materialize_bits(item)
+        self._update_bitword_type_label(item)
+
+    def _on_item_collapsed_bitword(self, item: QTreeWidgetItem) -> None:
+        if item.data(self._COL_TAG, self._ROLE_IS_BITWORD):
+            self._update_bitword_type_label(item)
 
     def _on_value_chunk(self, results: list[ReadResult]) -> None:
         if self._plc is None:
