@@ -132,6 +132,7 @@ class BrowseTab(QWidget):
     _ROLE_PATH = Qt.UserRole
     _ROLE_IS_LEAF = Qt.UserRole + 1
     _ROLE_IS_WRITE = Qt.UserRole + 2
+    _ROLE_IS_BITWORD = Qt.UserRole + 3
 
     # Emitted when the operator clicks "+ Add to Monitor" in the inspector.
     add_to_monitor_requested = Signal(str)  # full tag path
@@ -406,13 +407,19 @@ class BrowseTab(QWidget):
             for m in node.members:
                 self._add_tree_node(item, m)
         item.setText(self._COL_VALUE, "—")
+        # A bit-expanded integer word is both expandable (has BOOL bit
+        # children) AND readable (the word value itself), so treat it like a
+        # leaf for monitoring/value purposes.
+        is_bitword = node.is_bit_word()
+        readable = is_bitword or not node.members
         item.setData(self._COL_TAG, self._ROLE_PATH, node.name)
-        item.setData(self._COL_TAG, self._ROLE_IS_LEAF, not node.members)
+        item.setData(self._COL_TAG, self._ROLE_IS_LEAF, readable)
         item.setData(self._COL_TAG, self._ROLE_IS_WRITE, bool(node.is_write_tag))
+        item.setData(self._COL_TAG, self._ROLE_IS_BITWORD, is_bitword)
         if node.is_write_tag:
             for c in range(4):
                 item.setForeground(c, QColor("#888888"))
-        if not node.members and not node.is_write_tag:
+        if readable and not node.is_write_tag:
             self._set_monitor_cell(
                 item, "+", f"Add {node.name} to monitor",
             )
@@ -857,7 +864,19 @@ class BrowseTab(QWidget):
             item = self._find_tree_item_by_path(self.tree.topLevelItem(i), tag)
             if item is not None:
                 item.setText(self._COL_VALUE, repr(value))
+                if item.data(self._COL_TAG, self._ROLE_IS_BITWORD):
+                    self._set_bit_children_values(item, value)
                 return
+
+    def _set_bit_children_values(self, item: QTreeWidgetItem, value) -> None:
+        """Derive each BOOL bit's value from the parent integer word — no
+        extra PLC reads. Child index i == bit index i."""
+        try:
+            word = int(value)
+        except (TypeError, ValueError):
+            return
+        for i in range(item.childCount()):
+            item.child(i).setText(self._COL_VALUE, str((word >> i) & 1))
 
     def _on_value_chunk(self, results: list[ReadResult]) -> None:
         if self._plc is None:
@@ -1337,7 +1356,7 @@ class ExportTab(QWidget):
         sl.addWidget(src_hint)
 
         # Formats
-        self.fmt_excel = QCheckBox("Excel (.xlsx) — one sheet per UDT, all tags flattened")
+        self.fmt_excel = QCheckBox("Excel (.xlsx) — single sheet, all tags tree-flattened")
         self.fmt_json = QCheckBox("JSON — nested object preserving UDT structure")
         self.fmt_xml = QCheckBox("XML — CIP-style tag path per element")
         self.fmt_excel_history = QCheckBox(

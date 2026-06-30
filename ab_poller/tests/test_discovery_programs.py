@@ -31,5 +31,9 @@ class FakePLCClient(PLCClient):
 def test_program_tag_discovery_is_best_effort_when_program_list_fails():
     tree = discover_tags(FakePLCClient(), include_programs=True)
 
-    assert tree.count() == 1
+    # Controller-scope discovery still succeeds; no program nodes are added.
+    assert len(tree.root) == 1
     assert tree.root[0].name == "ControllerTag"
+    # The DINT is bit-expanded (32 BOOL bits) but remains a single top-level tag.
+    assert tree.root[0].is_bit_word()
+    assert len(tree.root[0].members) == 32

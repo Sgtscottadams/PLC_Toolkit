@@ -197,9 +197,23 @@ def _require_openpyxl():
     return Workbook, Font, PatternFill
 
 
+def _walk_tree_with_depth(tree: TagTree):
+    """Yield (depth, node) for every node, preorder, across all top-level
+    tags. Depth 0 = top-level tag; deeper = UDT / array members."""
+    def _rec(node: TagNode, depth: int):
+        yield depth, node
+        for m in node.members:
+            yield from _rec(m, depth + 1)
+
+    for n in tree.root:
+        yield from _rec(n, 0)
+
+
 def _write_excel(tree: TagTree, path: Path) -> Path:
-    """Excel: index sheet (PLC metadata) + one sheet per top-level UDT,
-    all tags flattened."""
+    """Excel: a single workbook with a PLC metadata sheet and ONE flattened
+    'Tags' sheet containing every tag in tree order (like the JSON/XML
+    exports). No per-UDT sheets — the full dotted tag path plus a Level
+    column convey the hierarchy."""
     Workbook, Font, PatternFill = _require_openpyxl()
     header_fill = PatternFill("solid", fgColor="1F3A5F")
     header_font = Font(bold=True, color="FFFFFF")
@@ -207,7 +221,7 @@ def _write_excel(tree: TagTree, path: Path) -> Path:
     meta_fill = PatternFill("solid", fgColor="F0F4F8")
     wb = Workbook()
 
-    # Index sheet.
+    # PLC metadata sheet.
     idx = wb.active
     idx.title = "PLC"
     rows = [
@@ -226,52 +240,39 @@ def _write_excel(tree: TagTree, path: Path) -> Path:
     ]
     for r, (k, v) in enumerate(rows, start=1):
         c1 = idx.cell(row=r, column=1, value=k)
-        c2 = idx.cell(row=r, column=2, value=v)
+        idx.cell(row=r, column=2, value=v)
         c1.font = bold
         c1.fill = meta_fill
     idx.column_dimensions["A"].width = 22
     idx.column_dimensions["B"].width = 36
 
-    # One sheet per top-level tag.
-    for node in tree.root:
-        sheet_name = _safe_sheet_name(node.name)
-        ws = wb.create_sheet(title=sheet_name)
-        _write_excel_sheet(ws, node, header_font, header_fill)
-
-    wb.save(path)
-    return path
-
-
-def _safe_sheet_name(name: str) -> str:
-    """Excel sheet names are max 31 chars, no []:*?/\\."""
-    s = re.sub(r"[\[\]:\*?/\\]", "_", name)
-    return s[:31] or "Tag"
-
-
-def _write_excel_sheet(ws, node: TagNode, header_font, header_fill) -> None:
-    """Write a tag (and its flattened descendants) to a single sheet.
-
-    Columns: Tag Path, Data Type, UDT Name, Is Array, Array Dim, Is Write Tag
-    """
-    headers = ["Tag Path", "Data Type", "UDT Name", "Is Array", "Array Dim", "Is Write Tag"]
+    # Single flattened Tags sheet (tree order, all UDTs together).
+    ws = wb.create_sheet(title="Tags")
+    headers = ["Level", "Tag", "Data Type", "UDT", "Array", "Array Dim", "Write"]
     for c, h in enumerate(headers, start=1):
         cell = ws.cell(row=1, column=c, value=h)
         cell.font = header_font
         cell.fill = header_fill
     row = 1
-    for ln in node.walk():
+    for depth, ln in _walk_tree_with_depth(tree):
         row += 1
-        ws.cell(row=row, column=1, value=ln.name)
-        ws.cell(row=row, column=2, value=ln.data_type.value)
-        ws.cell(row=row, column=3, value=ln.udt_name or "")
-        ws.cell(row=row, column=4, value="Yes" if ln.is_array else "No")
-        ws.cell(row=row, column=5, value=",".join(str(d) for d in ln.array_dim) if ln.array_dim else "")
-        ws.cell(row=row, column=6, value="Yes" if ln.is_write_tag else "No")
-    # Column widths
-    widths = {1: 50, 2: 18, 3: 28, 4: 8, 5: 14, 6: 12}
+        ws.cell(row=row, column=1, value=depth)
+        ws.cell(row=row, column=2, value=ln.name)
+        ws.cell(row=row, column=3, value=ln.data_type.value)
+        ws.cell(row=row, column=4, value=ln.udt_name or "")
+        ws.cell(row=row, column=5, value="Yes" if ln.is_array else "No")
+        ws.cell(
+            row=row, column=6,
+            value=",".join(str(d) for d in ln.array_dim) if ln.array_dim else "",
+        )
+        ws.cell(row=row, column=7, value="Yes" if ln.is_write_tag else "No")
+    widths = {1: 7, 2: 52, 3: 16, 4: 26, 5: 8, 6: 12, 7: 8}
     for col, w in widths.items():
         ws.column_dimensions[chr(64 + col)].width = w
     ws.freeze_panes = "A2"
+
+    wb.save(path)
+    return path
 
 
 # -- Monitor history export ----------------------------------------------

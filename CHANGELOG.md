@@ -18,6 +18,51 @@ The project has two parallel surfaces:
 
 ---
 
+## 2026-06-30 — Bit expansion: integer tags expose individual BOOL bits
+
+### Added (`plck/discovery.py`, `plck/models.py`, Browse tab)
+- Scalar integer / bit-string tags (SINT, INT, DINT, LINT and unsigned /
+  BYTE/WORD/DWORD/LWORD variants) are now expanded into BOOL bit children
+  named `<tag>.0 .. <tag>.N-1` (e.g. `Well_1.WELL_ALARM_WORD.0` …`.31`),
+  mirroring Studio 5000 bit addressing. They appear as an expandable
+  dropdown in the Browse tree and in the JSON/XML/Excel exports.
+  Bit-addressable widths: SINT/USINT/BYTE=8, INT/UINT/WORD=16,
+  DINT/UDINT/DWORD=32, LINT/ULINT/LWORD=64. **Arrays** of these types are
+  NOT expanded (would multiply the tree 8–64x per element).
+- Per-bit descriptions are NOT shown: pylogix cannot read Logix tag/bit
+  comments over CIP, and (per request) no static meaning table is invented.
+  Bits are unnamed BOOLs.
+- Performance: the post-discovery batch read targets the integer WORD only
+  (one read); each bit's value is **derived** in the UI as
+  `(word >> i) & 1` — no 8–64x extra PLC reads. `TagNode.bit_index`,
+  `TagNode.is_bit_word()`, and updated `leaf_names()/leaf_count()` encode
+  this. A bit-expanded word is both expandable and readable/monitorable
+  (the word), and each bit can be inspected/monitored on demand (pylogix
+  reads `Tag.N`).
+- `tests/test_bit_expansion.py` (+ updated discovery tests) cover the
+  expansion, leaf semantics, and bit derivation. Tests: 172 passed, 4 skipped.
+- Rebuilt `PLC_Toolkit.exe` and `dist_package/PLC_Toolkit.zip`.
+
+---
+
+## 2026-06-30 — Excel export: single flattened sheet (was one sheet per UDT)
+
+### Changed (`plck/export.py`, Export tab label)
+- The Excel export now writes ONE workbook with a **PLC** metadata sheet and
+  a single **Tags** sheet containing every tag flattened in tree order —
+  matching the JSON/XML exports. Previously it created one worksheet per
+  top-level UDT/tag. The Tags sheet columns are Level, Tag (full dotted
+  path), Data Type, UDT, Array, Array Dim, Write; the Level column +
+  full path convey the hierarchy. Added `_walk_tree_with_depth()` and
+  removed the per-sheet helpers (`_write_excel_sheet`, `_safe_sheet_name`).
+- Export-tab checkbox relabeled "Excel (.xlsx) — single sheet, all tags
+  tree-flattened".
+- `tests/test_export_filename.py` — added a test asserting the workbook has
+  exactly ['PLC','Tags'] and tags are flattened in tree order with depth.
+- Rebuilt `PLC_Toolkit.exe` and `dist_package/PLC_Toolkit.zip`.
+
+---
+
 ## 2026-06-30 — Fix Excel export extension (.excel → .xlsx)
 
 ### Fixed (`plck/export.py`)
